@@ -1,3 +1,4 @@
+import { Knex } from 'knex';
 import { db } from '../../../lib/knex/knex.js';
 import { PhoneAlreadyInUseError } from '../error.js';
 import { User } from '../types.js';
@@ -56,8 +57,8 @@ export async function findUserExistsByEmailOrPhone(email: string, phone: string)
   return Number(result?.count) > 0;
 }
 
-export async function createUser(user: Partial<User>): Promise<User> {
-  const [row] = await db('users')
+export async function createUser(user: Partial<User>, conn: Knex = db): Promise<User> {
+  const [row] = await conn('users')
     .insert({
       email: user.email,
       phone: user.phone,

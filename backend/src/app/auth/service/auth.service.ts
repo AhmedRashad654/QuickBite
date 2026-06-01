@@ -1,4 +1,6 @@
 import { NotAuthenticated } from '../../../lib/auth/error.js';
+import { db } from '../../../lib/knex/knex.js';
+import { RestaurantService, restaurantService } from '../../restaurant/service/restaurant.service.js';
 import { SystemRole } from '../../users/enums.js';
 import {
   createUser,
@@ -11,6 +13,7 @@ import {
   CannotSignupAsSystemAdmin,
   IncorrectCredentials,
   InvalidOTPError,
+  RestaurantDataRequiredError,
   UserAlreadyExistsError,
 } from '../error.js';
 import {
@@ -29,6 +32,8 @@ import {
 } from '../utils.js';
 
 export class AuthService {
+  constructor(private readonly restaurantService: RestaurantService) {}
+  
   register = async (data: RegisterDTO) => {
     if (data.role === SystemRole.SYSTEM_ADMIN) {
       throw CannotSignupAsSystemAdmin;
@@ -46,13 +51,34 @@ export class AuthService {
     const hashedPassword = await hashPassword(data.password);
 
     // 4. create user
-    const user = await createUser({
-      email: data.email,
-      phone: data.phone,
-      name: data.name,
-      password_hash: hashedPassword,
-      system_role: data.role,
-    });
+    const trx = await db.transaction();
+    let user;
+    let restaurant;
+    try {
+      user = await createUser(
+        {
+          email: data.email,
+          phone: data.phone,
+          name: data.name,
+          password_hash: hashedPassword,
+          system_role: data.role,
+        },
+        trx,
+      );
+
+      // check if the type of user is restaurant, then call restaurant service to create a new restaurant
+      if (data.role == SystemRole.RESTAURANT_USER) {
+        if (data.restaurant == undefined) {
+          throw RestaurantDataRequiredError;
+        }
+        restaurant = await this.restaurantService.create(user.id, data.restaurant, trx);
+      }
+
+      await trx.commit();
+    } catch (error) {
+      await trx.rollback();
+      throw error;
+    }
 
     // 5. create access token , refresh token
     const payload = { userId: user.id, role: data.role, email: user.email };
@@ -71,6 +97,7 @@ export class AuthService {
         systemRole: user.system_role,
         createdAt: user.created_at,
       },
+      restaurant,
     };
   };
 
@@ -164,4 +191,4 @@ export class AuthService {
   };
 }
 
-export const authService = new AuthService();
+export const authService = new AuthService(restaurantService);
