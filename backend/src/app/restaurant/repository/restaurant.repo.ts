@@ -1,6 +1,7 @@
 import { Knex } from 'knex';
 import { Restaurant } from '../type.js';
 import { db } from '../../../lib/knex/knex.js';
+import { applyCursorPagination, applyFilters, FilterParams, PaginationParams } from '../../../lib/http/pagination/cursor-pagination.js';
 
 const RESTAURANT_COLUMNS = [
   'id',
@@ -14,8 +15,11 @@ const RESTAURANT_COLUMNS = [
   'status_updated_at',
 ];
 
-export async function findAllRestaurants(): Promise<Restaurant[]> {
-  const rows = await db('restaurants').select(RESTAURANT_COLUMNS);
+export async function findAllRestaurants(params: PaginationParams, filters: FilterParams[]): Promise<Restaurant[]> {
+  let query = db('restaurants').select(RESTAURANT_COLUMNS);
+  query = applyFilters(query, filters);
+  query = applyCursorPagination(query, params);
+  const rows = await query;
   return rows;
 }
 
@@ -26,10 +30,7 @@ export async function findRestaurantById(id: number): Promise<Restaurant | null>
 
 // find restaurant by id
 
-export async function createRestaurant(
-  data: Partial<Restaurant>,
-  conn: Knex = db,
-): Promise<Restaurant> {
+export async function createRestaurant(data: Partial<Restaurant>, conn: Knex = db): Promise<Restaurant> {
   const [row] = await conn('restaurants')
     .insert({
       owner_id: data.owner_id,

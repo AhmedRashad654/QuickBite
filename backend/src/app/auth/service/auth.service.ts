@@ -1,20 +1,18 @@
+import { inject, injectable } from 'tsyringe';
 import { NotAuthenticated } from '../../../lib/auth/error.js';
 import { db } from '../../../lib/knex/knex.js';
 import { findBranchIdsByMemberId } from '../../rbac/repository/member-branch.repo.js';
 import { findRestaurantsWithRole } from '../../rbac/repository/restaurant_member.repo.js';
-import { memberService, MemberService } from '../../rbac/service/member.service.js';
+import { MemberService } from '../../rbac/service/member.service.js';
 import { RestaurantMembership } from '../../rbac/type.js';
-import {
-  RestaurantService,
-  restaurantService,
-} from '../../restaurant/service/restaurant.service.js';
+import { RestaurantService } from '../../restaurant/service/restaurant.service.js';
 import { SystemRole } from '../../users/enums.js';
 import {
   findUserByEmail,
   findUserExistsByEmailOrPhone,
   updateUserPassword,
 } from '../../users/repository/users.repo.js';
-import { userService, UserService } from '../../users/service/users.service.js';
+import { UserService } from '../../users/service/users.service.js';
 import { ForgetPasswordDTO, LoginDTO, RegisterDTO, ResetPasswordDTO } from '../dto/auth.dto.js';
 import {
   CannotSignupAsSystemAdmin,
@@ -38,12 +36,17 @@ import {
   hashPassword,
   verifyRefreshToken,
 } from '../utils.js';
+import { TOKENS } from '../../../lib/di/tokens.js';
+import { passwordResetEmail } from '../templates/password-reset.js';
+import { MailjetEmailProvider } from '../../../lib/email/mailjet.js';
 
+@injectable()
 export class AuthService {
   constructor(
-    private readonly restaurantService: RestaurantService,
-    private readonly userService: UserService,
-    private readonly memberService: MemberService,
+    @inject(TOKENS.RestaurantService) private readonly restaurantService: RestaurantService,
+    @inject(TOKENS.UserService) private readonly userService: UserService,
+    @inject(TOKENS.MemberService) private readonly memberService: MemberService,
+    @inject(TOKENS.EmailProvider) private readonly emailProvider: MailjetEmailProvider,
   ) {}
 
   register = async (data: RegisterDTO) => {
@@ -183,7 +186,8 @@ export class AuthService {
       expires_at: new Date(Date.now() + 10 * 60 * 1000),
     });
     // TODO: send email
-    console.log(`mocked email sent ${otp}`);
+    const { subject, html } = passwordResetEmail(otp);
+    await this.emailProvider.send(data.email, subject, html);
   };
 
   resetPassword = async (data: ResetPasswordDTO) => {
@@ -223,5 +227,3 @@ export class AuthService {
     return { accessToken };
   };
 }
-
-export const authService = new AuthService(restaurantService, userService, memberService);

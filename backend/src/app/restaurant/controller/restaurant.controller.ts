@@ -1,33 +1,33 @@
 import { Request, Response } from 'express';
-import { restaurantService, RestaurantService } from '../service/restaurant.service.js';
+import { RestaurantService } from '../service/restaurant.service.js';
 import { SystemRole } from '../../users/enums.js';
-import {
-  CreateRestaurantWithOwnerDTO,
-  UpdateRestaurantDTO,
-  UpdateRestaurantStatusDTO,
-} from '../dto/restaurant.dto.js';
+import { CreateRestaurantWithOwnerDTO, UpdateRestaurantDTO, UpdateRestaurantStatusDTO } from '../dto/restaurant.dto.js';
 import { validateBody } from '../../../lib/validation/validate.js';
+import { inject, injectable } from 'tsyringe';
+import { TOKENS } from '../../../lib/di/tokens.js';
+import { sendPaginated, sendSuccess } from '../../../lib/http/response.js';
+import { parseFilters, parsePaginationQuery } from '../../../lib/http/pagination/parse-query.js';
 
+@injectable()
 export class RestaurantController {
-  constructor(private readonly restaurantService: RestaurantService) {}
+  constructor(@inject(TOKENS.RestaurantService) private readonly restaurantService: RestaurantService) {}
 
   createWithOwner = async (req: Request, res: Response) => {
     const data = await validateBody(CreateRestaurantWithOwnerDTO, req.body);
-    const result = await this.restaurantService.createWithOwner(
-      req.user?.role! as SystemRole,
-      data,
-    );
-    res.status(201).json({ message: 'Restaurant created', ...result });
+    const result = await this.restaurantService.createWithOwner(req.user?.role! as SystemRole, data);
+    sendSuccess(res, { message: 'Restaurant created', ...result }, 201);
   };
 
-  getAll = async (_req: Request, res: Response) => {
-    const result = await this.restaurantService.findAll();
-    res.status(200).json({ data: result });
+  getAll = async (req: Request, res: Response) => {
+    const params = parsePaginationQuery(req.query, ['id', 'created_at', 'owner_id']);
+    const filters = parseFilters(req.query, ['id', 'status', 'name']);
+    const result = await this.restaurantService.findAll(params, filters);
+    sendPaginated(res, result.data, result.meta);
   };
 
   getById = async (req: Request, res: Response) => {
     const result = await this.restaurantService.findById(Number(req.params.id));
-    res.status(200).json(result);
+    sendSuccess(res, result);
   };
 
   update = async (req: Request, res: Response) => {
@@ -38,7 +38,7 @@ export class RestaurantController {
       req.user?.role! as SystemRole,
       data,
     );
-    res.status(200).json({ message: 'Restaurant updated', restaurant: result });
+    sendSuccess(res, { message: 'Restaurant updated', restaurant: result });
   };
 
   updateStatus = async (req: Request, res: Response) => {
@@ -48,10 +48,6 @@ export class RestaurantController {
       req.user?.role! as SystemRole,
       data,
     );
-    res
-      .status(200)
-      .json({ message: 'Status updated', restaurant: { id: result.id, status: result.status } });
+    sendSuccess(res, { message: 'Status updated', restaurant: { id: result.id, status: result.status } });
   };
 }
-
-export const restaurantController = new RestaurantController(restaurantService);

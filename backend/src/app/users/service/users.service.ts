@@ -4,8 +4,9 @@ import { UserNotFoundError } from '../error.js';
 import { createUser, findUserById, updateUser } from '../repository/users.repo.js';
 import { CreateUserData, User } from '../types.js';
 import { hashPassword } from '../../auth/utils.js';
+import { injectable } from 'tsyringe';
 
-  
+@injectable() 
 export class UserService {
 
   create = async (data: CreateUserData, trx?: Knex | Knex.Transaction): Promise<User> => {
@@ -55,4 +56,3 @@ export class UserService {
   };
 }
 
-export const userService = new UserService();

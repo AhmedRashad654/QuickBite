@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { NotAuthenticated } from './error.js';
 import { SystemRole } from '../../app/users/enums.js';
-import { permissionCacheService } from '../../app/rbac/service/permission-cache.service.js';
+import { container } from '../../lib/di/container.js';
+import { TOKENS } from '../di/tokens.js';
+import { PermissionCacheService } from '../../app/rbac/service/permission-cache.service.js';
 import { getRestaurantIdByBranch } from '../../app/branch/repository/branch.repo.js';
 
 export interface RBACOptions {
@@ -12,7 +14,6 @@ export interface RBACOptions {
 // check for permissions
 // system admin bypass this
 // restaurant users must have permissions for their role
- 
 
 export function rbac(options: RBACOptions) {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -20,7 +21,7 @@ export function rbac(options: RBACOptions) {
       if (!req.user) {
         throw NotAuthenticated;
       }
-      
+
       const { resource, action, allowSystemAdmin = true } = options;
 
       if (allowSystemAdmin && req.user.role == SystemRole.SYSTEM_ADMIN) {
@@ -28,12 +29,11 @@ export function rbac(options: RBACOptions) {
       }
 
       if (req.user.role == SystemRole.RESTAURANT_USER) {
-        
         const currentMembership = req.currentMembership;
 
         if (!currentMembership) {
           return res.status(500).json({
-            error: "Security Configuration Error: Missing tenant validation middleware before RBAC",
+            error: 'Security Configuration Error: Missing tenant validation middleware before RBAC',
           });
         }
 
@@ -41,8 +41,10 @@ export function rbac(options: RBACOptions) {
           return next();
         }
 
+        const permissionCacheService = container.resolve<PermissionCacheService>(TOKENS.PermissionCacheService);
+
         const permissions = await permissionCacheService.getPermissions(currentMembership.restaurantRole);
-        
+
         if (!permissionCacheService.hasPermission(permissions, resource, action)) {
           return res.status(403).json({
             error: 'Permission denied',
@@ -55,7 +57,6 @@ export function rbac(options: RBACOptions) {
       return res.status(403).json({
         error: 'Permission denied',
       });
-      
     } catch (error) {
       next(error);
     }
@@ -72,10 +73,7 @@ export function requireRestaurantMember(paramName: string = 'restaurantId') {
     if (req.user?.role == SystemRole.SYSTEM_ADMIN) {
       return next();
     }
-
-    const currentMembership = req.user?.memberships?.find(
-      (m) => Number(m.restaurantId) === Number(restaurantId),
-    );
+    const currentMembership = req.user?.memberships?.find((m) => Number(m.restaurantId) === Number(restaurantId));
 
     if (!currentMembership) {
       return res.status(403).json({ error: 'Permission denied' });
@@ -93,8 +91,7 @@ export function requireBranchAccess(paramName: string = 'branchId') {
         return next();
       }
 
-      const branchId =
-        parseInt(req.params[paramName] as string) || parseInt(req.query[paramName] as string);
+      const branchId = parseInt(req.params[paramName] as string) || parseInt(req.query[paramName] as string);
       if (!branchId) {
         return next();
       }

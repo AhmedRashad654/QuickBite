@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import { PermissionDeniedError } from '../../../lib/auth/error.js';
 import { RestaurantNotFoundError } from '../../restaurant/errors.js';
 import { findRestaurantById } from '../../restaurant/repository/restaurant.repo.js';
@@ -13,6 +14,7 @@ import {
   updateBranchStatus,
 } from '../repository/branch.repo.js';
 
+@injectable()
 export class BranchService {
   findNearby = async (lat: number, lng: number) => {
     const rows = await findNearbyBranches(lat, lng);
@@ -92,4 +94,3 @@ export class BranchService {
   };
 }
 
-export const branchService = new BranchService();

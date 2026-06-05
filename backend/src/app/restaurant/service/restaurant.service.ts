@@ -19,7 +19,10 @@ import { createUser, findUserExistsByEmailOrPhone } from '../../users/repository
 import { hashPassword } from '../../auth/utils.js';
 import { db } from '../../../lib/knex/knex.js';
 import { RestaurantStatus } from '../enums.js';
+import { injectable } from 'tsyringe';
+import { buildPaginationResult, FilterParams, PaginationParams } from '../../../lib/http/pagination/cursor-pagination.js';
 
+@injectable()
 export class RestaurantService {
   createWithOwner = async (userRole: SystemRole, data: CreateRestaurantWithOwnerDTO) => {
     if (userRole !== SystemRole.SYSTEM_ADMIN) {
@@ -85,9 +88,9 @@ export class RestaurantService {
     return result;
   };
 
-  findAll = async () => {
-    const result = await findAllRestaurants();
-    return result;
+  findAll = async (params: PaginationParams, filters: FilterParams[]) => {
+    const result = await findAllRestaurants(params, filters);
+    return buildPaginationResult(result, params.limit, params.sortBy);
   };
 
   findById = async (id: number) => {
@@ -120,5 +123,3 @@ export class RestaurantService {
     return await updateRestaurantStatus(id, data.status);
   };
 }
-
-export const restaurantService = new RestaurantService();

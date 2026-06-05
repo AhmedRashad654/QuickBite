@@ -46,4 +46,3 @@ export class CustomerAddressService {
   
 }
 
-export const customerAddressService = new CustomerAddressService();

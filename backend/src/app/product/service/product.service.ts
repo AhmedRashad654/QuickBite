@@ -100,5 +100,3 @@ export class ProductService {
         return {product: updatedProduct, branchDetails};
     }
 }
-
-export const productService = new ProductService();

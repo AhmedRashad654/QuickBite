@@ -1,15 +1,10 @@
+import { injectable } from "tsyringe";
+
 type LogLevel = 'info' | 'error' | 'warn' | 'debug';
 
-class Logger {
-    private static instance: Logger;
 
-    constructor() {
-        if(!Logger.instance) {
-            Logger.instance = this;
-        }
-        return Logger.instance;
-    }
-
+@injectable()
+export class Logger {
     log(level: LogLevel, message: string, metadata: Record<string, unknown> = {}) {
         const logObject = {
             level: level,
@@ -36,5 +31,3 @@ class Logger {
         this.log('debug', message, metadata);
     }
 }
-
-export const logger = new Logger();

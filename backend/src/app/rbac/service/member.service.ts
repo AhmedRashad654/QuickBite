@@ -22,22 +22,28 @@ import {
 import { findRoleByName } from '../repository/role.repo.js';
 import { RestaurantMember } from '../type.js';
 import { CreateMemberDTO, UpdateMemberBranchesDTO, UpdateMemberDTO } from '../dto/member.dto.js';
-import {
-  countBranchesByIdsAndRestaurant,
-  setMemberBranches,
-} from '../repository/member-branch.repo.js';
+import { countBranchesByIdsAndRestaurant, setMemberBranches } from '../repository/member-branch.repo.js';
 import { db } from '../../../lib/knex/knex.js';
 import { findUserByEmail, findUserByEmailOrPhone } from '../../users/repository/users.repo.js';
-import { userService, UserService } from '../../users/service/users.service.js';
+import { UserService } from '../../users/service/users.service.js';
 import { User } from '../../users/types.js';
 import { SystemRole } from '../../users/enums.js';
 import { generateOTP, hashOTP } from '../../auth/utils.js';
 import { createPasswordReset } from '../../auth/repository/auth.repo.js';
 import { toMs } from '../../../lib/utils/time.js';
 import { getPermissionsByRoleName } from '../repository/permission.repo.js';
+import { inject, injectable } from 'tsyringe';
+import { TOKENS } from '../../../lib/di/tokens.js';
+import { memberInvitationNew } from '../templates/member-invitation-new.js';
+import { MailjetEmailProvider } from '../../../lib/email/mailjet.js';
+import { memberInvitationExist } from '../templates/member-invitation-exist.js';
 
+@injectable()
 export class MemberService {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    @inject(TOKENS.UserService) private readonly userService: UserService,
+    @inject(TOKENS.EmailProvider) private readonly emailProvider: MailjetEmailProvider,
+  ) {}
 
   async createOwnerMember(
     restaurantId: number,
@@ -80,7 +86,9 @@ export class MemberService {
 
     const trx = await db.transaction();
     try {
+      let isNewUser = false;
       if (!user) {
+        isNewUser = true;
         user = await this.userService.create(
           {
             email: data.email,
@@ -115,17 +123,24 @@ export class MemberService {
 
       await setMemberBranches(member.id, rows, trx);
 
-      const otp = generateOTP();
-      const hashedOtp = hashOTP(otp);
-      await createPasswordReset(
-        {
-          user_id: user.id,
-          otp_hash: hashedOtp,
-          expires_at: new Date(Date.now() + toMs(7, 'd')),
-        },
-        trx,
-      );
-      console.log(`mocked email sent ${otp}`);
+      if (isNewUser) {
+        const otp = generateOTP();
+        const hashedOtp = hashOTP(otp);
+
+        await createPasswordReset(
+          {
+            user_id: user.id,
+            otp_hash: hashedOtp,
+            expires_at: new Date(Date.now() + toMs(7, 'd')),
+          },
+          trx,
+        );
+        const { subject, html } = memberInvitationNew(otp, data.role);
+        await this.emailProvider.send(data.email, subject, html);
+      } else {
+        const { subject, html } = memberInvitationExist(user.name || 'Team Member', data.role);
+        await this.emailProvider.send(user.email || data.email, subject, html);
+      }
 
       await trx.commit();
 
@@ -170,7 +185,7 @@ export class MemberService {
       updateData.role_id = roleId;
     }
     if (data.status) {
-      if(data.role === "owner") throw CannotAssignTwoOwnerForRestaurant;
+      if (data.role === 'owner') throw CannotAssignTwoOwnerForRestaurant;
       updateData.status = data.status;
     }
 
@@ -190,11 +205,7 @@ export class MemberService {
     return { message: 'Member deleted successfully' };
   }
 
-  async updateMemberBranches(
-    restaurantId: number,
-    memberId: number,
-    data: UpdateMemberBranchesDTO,
-  ) {
+  async updateMemberBranches(restaurantId: number, memberId: number, data: UpdateMemberBranchesDTO) {
     // single query: member + role name (no N+1)
     const result = await findMemberWithRoleName(memberId);
     if (!result || Number(result.member.restaurant_id) !== Number(restaurantId)) {
@@ -232,5 +243,3 @@ export class MemberService {
     }
   }
 }
-
-export const memberService = new MemberService(userService);

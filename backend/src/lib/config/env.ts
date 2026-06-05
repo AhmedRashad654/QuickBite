@@ -8,7 +8,6 @@ const __dirname = path.dirname(__filename);
 
 config({ path: path.resolve(__dirname, '../../../.env') });
 
-
 const schema = z.object({
   PORT: z.string().default('3000'),
   DB_HOST: z.string().default('localhost'),
@@ -23,7 +22,15 @@ const schema = z.object({
   REFRESH_SECRET: z.string(),
   ACCESS_EXPIRES_IN: z.string(),
   REFRESH_EXPIRES_IN: z.string(),
-  NODE_ENV:z.string().default('development'),
+  NODE_ENV: z.string().default('development'),
+  REDIS_HOST: z.string().default('localhost'),
+  REDIS_PORT: z.string().default('6379'),
+  REDIS_PASSWORD: z.string().default(''),
+  CORS_ORIGINS: z.string().default('http://localhost:3000'),
+  MAILJET_API_KEY: z.string(),
+  MAILJET_SECRET_KEY: z.string(),
+  MAILJET_FROM_EMAIL: z.string(),
+  MAILJET_FROM_NAME: z.string(),
 });
 
 const parsed = schema.parse(process.env);
@@ -46,5 +53,19 @@ export const env = {
     accessSecret: parsed.ACCESS_SECRET,
     accessExpiresIn: parsed.ACCESS_EXPIRES_IN,
     refreshExpiresIn: parsed.REFRESH_EXPIRES_IN,
+  },
+  redis: {
+    host: parsed.REDIS_HOST,
+    port: Number(parsed.REDIS_PORT),
+    password: parsed.REDIS_PASSWORD,
+  },
+  cors: {
+    origins: parsed.CORS_ORIGINS.split(','),
+  },
+  mailjet: {
+    mailjetApiKey: parsed.MAILJET_API_KEY,
+    mailjetSecretKey: parsed.MAILJET_SECRET_KEY,
+    mailjetFromEmail: parsed.MAILJET_FROM_EMAIL,
+    mailjetFormName: parsed.MAILJET_FROM_NAME,
   },
 };

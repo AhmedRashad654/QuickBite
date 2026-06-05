@@ -1,9 +1,13 @@
 import { Router } from 'express';
-import { restaurantController } from './controller/restaurant.controller.js';
+import { container } from '../../lib/di/container.js';
+import { TOKENS } from '../../lib/di/tokens.js';
 import { authenticate } from '../../lib/auth/guard.js';
 import { rbac, requireRestaurantMember } from '../../lib/auth/rbac.js';
+import { RestaurantController } from './controller/restaurant.controller.js';
 
 export const restaurantRouter = Router();
+
+const restaurantController = container.resolve<RestaurantController>(TOKENS.RestaurantController);
 
 restaurantRouter.get('/', restaurantController.getAll);
 restaurantRouter.get('/:id', restaurantController.getById);

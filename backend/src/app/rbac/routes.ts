@@ -1,9 +1,13 @@
 import {Router} from "express";
-import { memberController } from "./controller/member.controller.js";
+import {container} from '../../lib/di/container.js'
 import { authenticate } from "../../lib/auth/guard.js";
 import { rbac, requireRestaurantMember } from "../../lib/auth/rbac.js";
+import { TOKENS } from "../../lib/di/tokens.js";
+import { MemberController } from "./controller/member.controller.js";
 
 export const rbacRouter = Router();
+
+const memberController = container.resolve<MemberController>(TOKENS.MemberController);
 
 rbacRouter.get('/roles/:role/permissions', memberController.getRolePermissions);
 
