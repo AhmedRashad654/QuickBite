@@ -26,8 +26,4 @@ branchRouter.patch(
   rbac({ resource: 'core:branch', action: 'update' }),
   branchController.update,
 );
-branchRouter.patch(
-  '/:id/status',
-  authenticate,
-  branchController.updateStatus,
-);
+branchRouter.patch('/:id/status', authenticate, branchController.updateStatus);

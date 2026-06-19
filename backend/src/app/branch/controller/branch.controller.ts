@@ -24,7 +24,7 @@ export class BranchController {
 
   findNearby = async (req: Request, res: Response) => {
     const results = await this.branchService.findNearby(Number(req.query.lat), Number(req.query.lng));
-    sendSuccess(res, { data: results });
+    sendSuccess(res, results);
   };
 
   findByRestaurant = async (req: Request, res: Response) => {
@@ -56,5 +56,4 @@ export class BranchController {
       },
     });
   };
-
 }

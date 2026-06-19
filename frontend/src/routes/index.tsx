@@ -13,6 +13,7 @@ const ForgotPassword = lazy(
   () => import("@/features/auth/pages/ForgotPassword"),
 );
 const ResetPassword = lazy(() => import("@/features/auth/pages/ResetPassword"));
+const Home = lazy(() => import("@/features/home/pages/Home"));
 
 const Routes = () => {
   const AuthRoutes = [
@@ -49,17 +50,20 @@ const Routes = () => {
     },
   ];
 
+  const CustomerRoutes = [
+    {
+      element: <ProtectedRoute />,
+      children: [{ path: "/", element: <Home /> }],
+    },
+  ];
   const errorRoute = {
     path: "*",
     element: <div>not found</div>,
   };
 
   const router = createBrowserRouter([
-    {
-      element: <ProtectedRoute />,
-      children: [{ path: "/", element: <div>hello</div> }],
-    },
     ...AuthRoutes,
+    ...CustomerRoutes,
     errorRoute,
   ]);
 

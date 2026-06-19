@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { ProductService } from '../service/product.service.js';
 import { CreateProductDTO, UpdateProductDTO } from '../dto/product.dto.js';
 import { validateBody } from '../../../lib/validation/validate.js';
@@ -6,7 +6,6 @@ import { SystemRole } from '../../users/enums.js';
 import { inject, injectable } from 'tsyringe';
 import { TOKENS } from '../../../lib/di/tokens.js';
 import { sendSuccess } from '../../../lib/http/response.js';
-import { MissingProductIdsQueryError } from '../errors.js';
 
 @injectable()
 export class ProductController {

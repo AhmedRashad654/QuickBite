@@ -30,9 +30,6 @@ export class CreateBranchDTO {
   @IsString()
   closes_at!: string;
 
-  @IsInt()
-  @Min(0)
-  delivery_radius!: number;
 
   @IsEnum(Currency)
   currency!: Currency;
@@ -65,10 +62,6 @@ export class UpdateBranchDTO {
   @IsString()
   closes_at?: string;
 
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  delivery_radius?: number;
 
   @IsOptional()
   @IsEnum(Currency)

@@ -221,10 +221,26 @@ export class AuthService {
       throw NotAuthenticated;
     }
     const payload = verifyRefreshToken(refreshToken);
+
+    let membershipsInfo: RestaurantMembership[] = [];
+    if (payload.role == SystemRole.RESTAURANT_USER) {
+      const rows = await findRestaurantsWithRole(payload.userId);
+      membershipsInfo = await Promise.all(
+        rows.map(async (row: { restaurant_id: number; member_id: number; role_name: string }) => {
+          const branchIds = await findBranchIdsByMemberId(row.member_id);
+          return {
+            restaurantId: row.restaurant_id,
+            restaurantRole: row.role_name,
+            branchIds: branchIds,
+          };
+        }),
+      );
+    }
     const accessToken = createAccessToken({
       userId: payload.userId,
       role: payload.role,
       email: payload.email,
+      memberships: membershipsInfo,
     });
     return { accessToken };
   };

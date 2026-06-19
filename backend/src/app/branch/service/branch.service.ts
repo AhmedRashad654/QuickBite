@@ -9,18 +9,22 @@ import {
   createBranch,
   findBranchById,
   findBranchesByRestaurant,
-  findBranchWithRestaurant,
+  findClosestBranches,
   findNearbyBranches,
   updateBranch,
   updateBranchStatus,
 } from '../repository/branch.repo.js';
-import { BranchWithRestaurant } from '../type.js';
 
 @injectable()
 export class BranchService {
   findNearby = async (lat: number, lng: number) => {
-    const rows = await findNearbyBranches(lat, lng);
-    return rows;
+    let isFallback = false;
+    let branches = await findNearbyBranches(lat, lng);
+    if (branches.length === 0) {
+      branches = await findClosestBranches(lat, lng, 5);
+      isFallback = true;
+    }
+    return { branches, isFallback };
   };
 
   findByRestaurant = async (restaurantId: number) => {
@@ -49,7 +53,6 @@ export class BranchService {
       opens_at: data.opens_at,
       closes_at: data.closes_at,
       currency: data.currency,
-      delivery_radius: data.delivery_radius,
       commission: 0,
       accept_orders: false,
     });
@@ -84,5 +87,4 @@ export class BranchService {
 
     return await updateBranchStatus(branchId, data);
   };
-
 }

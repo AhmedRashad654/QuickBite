@@ -10,7 +10,7 @@ import type {
 } from "../types";
 import { apiClient } from "@/api/axios-client";
 
-const unwrap = <T>(response: { data: ApiResponse<T> }) => response.data.data;
+export const unwrap = <T>(response: { data: ApiResponse<T> }) => response.data.data;
 
 export const login = async (payload: LoginPayload) => {
   const response = await apiClient.post<ApiResponse<AuthResponse>>(

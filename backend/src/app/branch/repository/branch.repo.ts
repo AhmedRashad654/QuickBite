@@ -2,6 +2,7 @@ import { Knex } from 'knex';
 import { db } from '../../../lib/knex/knex.js';
 import { Branch, BranchWithRestaurant } from '../type.js';
 import { NoFieldsToUpdateError } from '../errors.js';
+import { env } from '../../../lib/config/env.js';
 
 const BRANCH_COLUMNS = [
   'id',
@@ -15,7 +16,6 @@ const BRANCH_COLUMNS = [
   'opens_at',
   'closes_at',
   'accept_orders',
-  'delivery_radius',
   'currency',
   'commission',
   'created_at',
@@ -35,7 +35,6 @@ export async function createBranch(data: Partial<Branch>, conn: Knex = db): Prom
       opens_at: data.opens_at,
       closes_at: data.closes_at,
       accept_orders: data.accept_orders,
-      delivery_radius: data.delivery_radius,
       currency: data.currency,
       commission: data.commission,
     })
@@ -67,7 +66,6 @@ export async function updateBranch(id: number, data: Partial<Branch>): Promise<B
   if (data.lng !== undefined) mapped.lng = data.lng;
   if (data.opens_at !== undefined) mapped.opens_at = data.opens_at;
   if (data.closes_at !== undefined) mapped.closes_at = data.closes_at;
-  if (data.delivery_radius !== undefined) mapped.delivery_radius = data.delivery_radius;
   if (data.currency !== undefined) mapped.currency = data.currency;
   if (data.accept_orders !== undefined) mapped.accept_orders = data.accept_orders;
   if (Object.keys(mapped).length === 0) {
@@ -104,6 +102,7 @@ export async function getRestaurantIdByBranch(branchId: number): Promise<number 
 }
 
 export async function findNearbyBranches(lat: number, lng: number): Promise<Branch[]> {
+  const radiusMeters = env.delivery.radiusMeters || 5000;
   const result = await db.raw(
     `
        SELECT 
@@ -120,9 +119,38 @@ export async function findNearbyBranches(lat: number, lng: number): Promise<Bran
        r.logo_url
        FROM restaurant_branches b JOIN restaurants r ON  b.restaurant_id = r.id
        WHERE b.is_active = true AND r.status ='active'
-       AND ST_DWithin(b.location, ST_MakePoint(?, ?)::geography, b.delivery_radius*1000)
+       AND ST_DWithin(b.location, ST_MakePoint(?, ?)::geography, ?)
     `,
-    [lng, lat],
+    [lng, lat, radiusMeters],
+  );
+
+  return result.rows;
+}
+
+export async function findClosestBranches(lat: number, lng: number, limit: number = 5): Promise<Branch[]> {
+  const result = await db.raw(
+    `
+       SELECT 
+         b.id,
+         b.restaurant_id,
+         b.address_text,
+         b.label,
+         b.lat,
+         b.lng,
+         b.is_active,
+         b.accept_orders,
+         b.currency,
+         r.name,
+         r.logo_url,
+         ST_Distance(b.location, ST_MakePoint(?, ?)::geography) as distance_meters
+       FROM restaurant_branches b 
+       JOIN restaurants r ON b.restaurant_id = r.id
+       WHERE b.is_active = true 
+         AND r.status = 'active'
+       ORDER BY b.location <-> ST_MakePoint(?, ?)::geography
+       LIMIT ?
+    `,
+    [lng, lat, lng, lat, limit],
   );
 
   return result.rows;
