@@ -15,3 +15,8 @@ export enum PaymentMethod {
   ONLINE = 'online',
   COD = 'cod',
 }
+
+export enum OrderType {
+  DELIVERY = 'delivery',
+  PICKUP = 'pickup',
+}

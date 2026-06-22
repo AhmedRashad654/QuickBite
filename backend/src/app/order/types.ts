@@ -1,5 +1,5 @@
 import { Currency } from '../branch/enums.js';
-import { OrderStatus, PaymentMethod } from './enums.js';
+import { OrderStatus, OrderType, PaymentMethod } from './enums.js';
 export interface Order {
   id: number;
   public_id: string;
@@ -15,6 +15,7 @@ export interface Order {
   branch_lat: number;
   branch_lng: number;
   status: OrderStatus;
+  order_type:OrderType;
   subtotal: number;
   delivery_fee: number;
   service_fee: number;
@@ -51,13 +52,14 @@ export interface CreateOrderInput {
   restaurant_id: number;
   branch_id: number;
   customer_id: number;
-  customer_address_id: number;
-  delivery_lat: number;
-  delivery_lng: number;
-  delivery_address_text_snapshot: string;
+  customer_address_id: number | null;
+  delivery_lat: number | null;
+  delivery_lng: number | null;
+  delivery_address_text_snapshot: string | null;
   branch_lat: number;
   branch_lng: number;
   status: OrderStatus;
+  order_type:OrderType;
   subtotal: number;
   delivery_fee: number;
   service_fee: number;

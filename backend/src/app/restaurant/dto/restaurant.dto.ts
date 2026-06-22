@@ -42,25 +42,6 @@ export class UpdateRestaurantDTO {
   primary_country?: string;
 }
 
-export class CreateRestaurantWithOwnerDTO {
-  @IsDefined({ message: 'owner object must be provided' })
-  @ValidateNested()
-  @Type(() => CreateRestaurantOwnerDTO)
-  owner!: CreateRestaurantOwnerDTO;
-
-  @IsString()
-  @IsNotEmpty()
-  name!: string;
-
-  @IsOptional()
-  @IsString()
-  logo_url?: string;
-
-  @IsString()
-  @IsEnum(Country)
-  primary_country!: string;
-}
-
 export class CreateRestaurantOwnerDTO {
   @IsEmail()
   email!: string;
@@ -82,11 +63,29 @@ export class CreateRestaurantOwnerDTO {
       minSymbols: 1,
     },
     {
-      message:
-        'Password is not strong enough. It must contain at least 8 characters, one uppercase letter, one lowercase letter, one number.',
+      message: 'Password is not strong enough. It must contain at least 8 characters, one uppercase letter, one lowercase letter, one number.',
     },
   )
   password!: string;
+}
+
+export class CreateRestaurantWithOwnerDTO {
+  @IsDefined({ message: 'owner object must be provided' })
+  @ValidateNested()
+  @Type(() => CreateRestaurantOwnerDTO)
+  owner!: CreateRestaurantOwnerDTO;
+
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  logo_url?: string;
+
+  @IsString()
+  @IsEnum(Country)
+  primary_country!: string;
 }
 
 export class UpdateRestaurantStatusDTO {

@@ -1,8 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ArrowLeft, Loader2, ShoppingBag } from "lucide-react";
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { Link } from "react-router-dom";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -22,40 +21,40 @@ import { useCartStore } from "@/store/cart-store";
 import CheckoutItemRow from "../components/CheckoutItemRow";
 import OrderSummary from "../components/OrderSummary";
 import { usePlaceOrder } from "../hooks/useCheckout";
-
-const checkoutSchema = z.object({
-  customerAddressId: z.number().min(1, "Select a delivery address"),
-  paymentMethod: z.enum(["cod", "online"]),
-});
-
-type CheckoutFormValues = z.infer<typeof checkoutSchema>;
+import { checkoutSchema, type CheckoutFormValues } from "../schemas";
 
 const Checkout = () => {
   const items = useCartStore((s) => s.items);
-  const branchId = useCartStore((s) => s.branchId);
-  const branchName = useCartStore((s) => s.branchName);
+  const branchId = useCartStore((s) => s.branch_id);
+  const branchName = useCartStore((s) => s.branch_name);
   const currency = useCartStore((s) => s.currency);
-  const deliveryFee = useCartStore((s) => s.deliveryFee);
+  const deliveryFee = useCartStore((s) => s.delivery_fee);
   const clearCart = useCartStore((s) => s.clearCart);
+  const subTotal = useCartStore((s) => s.getSubTotal());
 
   const { data: addresses, isLoading: addressesLoading } =
     useCustomerAddresses();
+
   const {
     mutate: placeOrder,
-    isPending: isPlacing,
-    data: orderResult,
-    reset: resetMutation,
+    isPending: isPlacing
   } = usePlaceOrder();
 
   const form = useForm<CheckoutFormValues>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
-      customerAddressId: 0,
-      paymentMethod: "cod",
+      order_type: "delivery",
+      customer_address_id: null,
+      payment_method: "cod",
     },
   });
 
-  if (items.length === 0 && !orderResult) {
+  const orderType = useWatch({
+    control: form.control,
+    name: "order_type",
+  });
+
+  if (items.length === 0) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-16 text-center">
         <ShoppingBag className="mx-auto h-8 w-8 text-muted-foreground" />
@@ -69,64 +68,34 @@ const Checkout = () => {
     );
   }
 
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-
   const onSubmit = (values: CheckoutFormValues) => {
     if (!branchId) return;
+
     placeOrder(
       {
-        branchId,
-        customerAddressId: values.customerAddressId,
-        paymentMethod: values.paymentMethod,
+        branch_id: branchId,
+        order_type: values.order_type,
+        customer_address_id:
+          values.order_type === "delivery"
+            ? values.customer_address_id!
+            : undefined,
+
+        payment_method: values.payment_method,
         items: items.map((i) => ({
-          productId: i.productId,
+          product_id: i.product_id,
           quantity: i.quantity,
         })),
       },
       {
-        onSuccess: (result) => {
+        onSuccess: ({ data }) => {
           clearCart();
-          if (
-            result.payment_method === "online" &&
-            result.payment?.redirectUrl
-          ) {
-            window.location.href = result.payment.redirectUrl;
+          if (data.payment_method === "online" && data.payment?.redirectUrl) {
+            window.location.href = data.payment.redirectUrl;
           }
         },
       },
     );
   };
-
-  if (orderResult) {
-    return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10">
-          <ShoppingBag className="h-6 w-6 text-primary" />
-        </div>
-        <h1 className="mt-4 text-xl font-semibold">Order Placed!</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Your order has been placed successfully.
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Order ID:{" "}
-          <span className="font-mono font-medium">
-            {orderResult.public_id.slice(0, 8)}
-          </span>
-        </p>
-        <div className="mt-6 flex justify-center gap-3">
-          <Button variant="outline" onClick={() => resetMutation()}>
-            Place another order
-          </Button>
-          <Button asChild>
-            <Link to="/">Back to home</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
@@ -142,13 +111,11 @@ const Checkout = () => {
 
       <div className="space-y-6">
         <section>
-          <h2 className="mb-3 text-lg font-medium">
-            Items from {branchName}
-          </h2>
+          <h2 className="mb-3 text-lg font-medium">Items from {branchName}</h2>
           <div className="space-y-2">
             {items.map((item) => (
               <CheckoutItemRow
-                key={item.productId}
+                key={item.product_id}
                 item={item}
                 currency={currency}
               />
@@ -160,66 +127,97 @@ const Checkout = () => {
           <FieldGroup className="space-y-4">
             <Controller
               control={form.control}
-              name="customerAddressId"
+              name="order_type"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor="checkout-address">
-                    Delivery address
+                  <FieldLabel htmlFor="checkout-order-type">
+                    Order Type
                   </FieldLabel>
-                  {addressesLoading ? (
-                    <div className="flex h-9 items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Loading addresses
-                    </div>
-                  ) : !addresses || addresses.length === 0 ? (
-                    <div className="text-sm text-muted-foreground">
-                      No addresses saved.{" "}
-                      <Link
-                        to="/profile"
-                        className="font-medium text-foreground underline-offset-4 hover:underline"
-                      >
-                        Add an address
-                      </Link>
-                    </div>
-                  ) : (
-                    <Select
-                      name={field.name}
-                      onValueChange={(val) =>
-                        field.onChange(val === "" ? 0 : Number(val))
-                      }
-                      value={field.value ? String(field.value) : ""}
-                    >
-                      <SelectTrigger
-                        id="checkout-address"
-                        className="w-full"
-                        onBlur={field.onBlur}
-                        ref={field.ref}
-                        aria-invalid={fieldState.invalid}
-                      >
-                        <SelectValue placeholder="Select an address" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {addresses.map((addr) => (
-                          <SelectItem
-                            key={addr.id}
-                            value={String(addr.id)}
-                          >
-                            {addr.label} — {addr.street}, {addr.city}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Select
+                    name={field.name}
+                    onValueChange={field.onChange}
+                    value={field.value}
+                  >
+                    <SelectTrigger id="checkout-order-type" className="w-full">
+                      <SelectValue placeholder="How do you want your order?" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="delivery">🚴 Delivery</SelectItem>
+                      <SelectItem value="pickup">🛍️ Pickup</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {fieldState.invalid ? (
                     <FieldError errors={[fieldState.error]} />
                   ) : null}
                 </Field>
               )}
             />
+            {orderType === "delivery" && (
+              <Controller
+                control={form.control}
+                name="customer_address_id"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel
+                      htmlFor="checkout-address"
+                      className="flex justify-between gap-2 items-center"
+                    >
+                      Delivery address
+                      <Link
+                        to="/profile"
+                        className="font-medium text-foreground underline-offset-4 hover:underline"
+                      >
+                        Add new address
+                      </Link>
+                    </FieldLabel>
+                    {addressesLoading ? (
+                      <div className="flex h-9 items-center gap-2 text-sm text-muted-foreground">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Loading addresses
+                      </div>
+                    ) : !addresses || addresses.length === 0 ? (
+                      <div className="text-sm text-muted-foreground">
+                        No addresses saved.{" "}
+                      </div>
+                    ) : (
+                      <>
+                        <Select
+                          name={field.name}
+                          onValueChange={(val) =>
+                            field.onChange(val === "" ? 0 : Number(val))
+                          }
+                          value={field.value ? String(field.value) : ""}
+                        >
+                          <SelectTrigger
+                            id="checkout-address"
+                            className="w-full"
+                            onBlur={field.onBlur}
+                            ref={field.ref}
+                            aria-invalid={fieldState.invalid}
+                          >
+                            <SelectValue placeholder="Select an address" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {addresses.map((addr) => (
+                              <SelectItem key={addr.id} value={String(addr.id)}>
+                                {addr.label} — {addr.street}, {addr.city}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    )}
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
+                  </Field>
+                )}
+              />
+            )}
 
             <Controller
               control={form.control}
-              name="paymentMethod"
+              name="payment_method"
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
                   <FieldLabel htmlFor="checkout-payment">
@@ -240,11 +238,11 @@ const Checkout = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="cod">
-                        Cash on delivery
+                        {orderType === "pickup"
+                          ? "Pay at restaurant"
+                          : "Cash on delivery"}
                       </SelectItem>
-                      <SelectItem value="online">
-                        Pay online
-                      </SelectItem>
+                      <SelectItem value="online">Pay online</SelectItem>
                     </SelectContent>
                   </Select>
                   {fieldState.invalid ? (
@@ -257,8 +255,8 @@ const Checkout = () => {
 
           <div className="mt-6">
             <OrderSummary
-              subtotal={subtotal}
-              deliveryFee={deliveryFee}
+              subtotal={subTotal}
+              deliveryFee={orderType === "pickup" ? 0 : deliveryFee}
               currency={currency}
             />
           </div>
@@ -269,11 +267,7 @@ const Checkout = () => {
             type="submit"
             disabled={isPlacing}
           >
-            {isPlacing ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <ShoppingBag />
-            )}
+            {isPlacing ? <Loader2 className="animate-spin" /> : <ShoppingBag />}
             Place order
           </Button>
         </form>

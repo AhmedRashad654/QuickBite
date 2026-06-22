@@ -8,33 +8,29 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useCartStore } from "@/store/cart-store";
+import { formatPrice } from "@/lib/format-price";
+import type { MenuProduct } from "../types";
 
 type CartSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currency: string;
+  findProductInMenu: (productId: number) => MenuProduct | null;
 };
 
-const formatPrice = (price: number, currency: string) => {
-  const formatted = (price / 100).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${formatted} ${currency}`;
-};
-
-const CartSheet = ({ open, onOpenChange, currency }: CartSheetProps) => {
+const CartSheet = ({
+  open,
+  onOpenChange,
+  currency,
+  findProductInMenu,
+}: CartSheetProps) => {
   const navigate = useNavigate();
   const items = useCartStore((s) => s.items);
   const incrementQuantity = useCartStore((s) => s.incrementQuantity);
   const decrementQuantity = useCartStore((s) => s.decrementQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
   const clearCart = useCartStore((s) => s.clearCart);
-
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
+  const subTotal = useCartStore((s) => s.getSubTotal());
 
   const handleCheckout = () => {
     onOpenChange(false);
@@ -68,69 +64,79 @@ const CartSheet = ({ open, onOpenChange, currency }: CartSheetProps) => {
           </div>
         ) : (
           <>
-            <div className="flex-1 space-y-3 overflow-y-auto py-4">
-              {items.map((item) => (
-                <div
-                  key={item.productId}
-                  className="flex items-center gap-3 rounded-lg border p-3"
-                >
-                  <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
-                    {item.imageUrl ? (
-                      <img
-                        src={item.imageUrl}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-sm font-semibold text-muted-foreground/30">
-                        {item.name.charAt(0).toUpperCase()}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{item.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatPrice(item.price, currency)}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="icon-xs"
-                      onClick={() => decrementQuantity(item.productId)}
-                    >
-                      <Minus />
-                    </Button>
-                    <span className="flex h-8 w-8 items-center justify-center text-sm font-medium tabular-nums">
-                      {item.quantity}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="icon-xs"
-                      onClick={() => incrementQuantity(item.productId)}
-                    >
-                      <Plus />
-                    </Button>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => removeItem(item.productId)}
-                    className="text-muted-foreground hover:text-destructive"
+            <div className="flex-1 space-y-3 overflow-y-auto py-4 px-4">
+              {items.map((item) => {
+                const productItem = findProductInMenu(item.product_id);
+                return (
+                  <div
+                    key={item.product_id}
+                    className="flex sm:flex-row flex-col sm:items-center sm:justify-between gap-3 rounded-lg border p-3"
                   >
-                    <Trash2 />
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex gap-2">
+                      <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                        {item.image_url ? (
+                          <img
+                            src={item.image_url}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-sm font-semibold text-muted-foreground/30">
+                            {item.name.charAt(0).toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {item.name}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatPrice(item.price, currency)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="icon-xs"
+                          onClick={() => decrementQuantity(item.product_id)}
+                        >
+                          <Minus />
+                        </Button>
+                        <span className="flex h-8 w-8 items-center justify-center text-sm font-medium tabular-nums">
+                          {item.quantity}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon-xs"
+                          onClick={() =>
+                            incrementQuantity(item.product_id, productItem)
+                          }
+                        >
+                          <Plus />
+                        </Button>
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => removeItem(item.product_id)}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 />
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="border-t pt-4">
+            <div className="border-t p-4">
               <div className="flex items-center justify-between text-base font-semibold">
                 <span>Subtotal</span>
-                <span>{formatPrice(subtotal, currency)}</span>
+                <span>{formatPrice(subTotal, currency)}</span>
               </div>
 
               <Button

@@ -19,8 +19,3 @@ export interface Branch {
   commission: number;
   location: string;
 }
-
-export interface BranchWithRestaurant {
-  branch: Branch;
-  restaurantStatus: string;
-}

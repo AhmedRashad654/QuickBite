@@ -1,5 +1,5 @@
 import { apiClient } from "@/api/axios-client";
-import { unwrapResponse } from "@/features/auth/services/auth-api";
+import { unwrap } from "@/features/auth/services/auth-api";
 import type { ApiResponse } from "@/api/api-helper";
 import type { OrderResponse, PlaceOrderPayload } from "../types";
 
@@ -16,5 +16,5 @@ export const placeOrder = async (
       },
     },
   );
-  return unwrapResponse(response);
+  return unwrap(response);
 };

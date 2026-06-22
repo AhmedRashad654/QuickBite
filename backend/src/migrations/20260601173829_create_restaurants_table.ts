@@ -8,7 +8,7 @@ export async function up(knex: Knex): Promise<void> {
             name text NOT NULL,
             logo_url TEXT,
             status TEXT NOT NULL CHECK(status IN ('active','suspended','disabled','pending')) DEFAULT 'pending',
-            primary_country TEXT NOT NULL CHECK(type IN ('EG','SA')),
+            primary_country TEXT NOT NULL CHECK(primary_country IN ('EG','SA')),
             created_at TIMESTAMP NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
             status_updated_at TIMESTAMP NOT NULL DEFAULT NOW(),

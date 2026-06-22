@@ -1,13 +1,14 @@
 export interface PlaceOrderItem {
-  productId: number;
+  product_id: number;
   quantity: number;
 }
 
 export interface PlaceOrderPayload {
-  branchId: number;
-  customerAddressId: number;
-  paymentMethod: "cod" | "online";
-  items: PlaceOrderItem[];
+  branch_id: number;
+  order_type: "delivery" | "pickup"; 
+  customer_address_id?: number | null;
+  payment_method: "cod" | "online";
+  items: { product_id: number; quantity: number }[];
 }
 
 export interface OrderItemResponse {
@@ -30,7 +31,7 @@ export interface OrderResponse {
     lng: number;
     address_text: string;
   };
-  subtotal: number;
+  sub_total: number;
   delivery_fee: number;
   service_fee: number;
   total: number;

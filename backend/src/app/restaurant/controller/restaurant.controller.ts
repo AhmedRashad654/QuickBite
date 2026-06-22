@@ -15,7 +15,7 @@ export class RestaurantController {
   createWithOwner = async (req: Request, res: Response) => {
     const data = await validateBody(CreateRestaurantWithOwnerDTO, req.body);
     const result = await this.restaurantService.createWithOwner(req.user?.role! as SystemRole, data);
-    sendSuccess(res, { message: 'Restaurant created', ...result }, 201);
+    sendSuccess(res, result, 'Restaurant created', 201);
   };
 
   getAll = async (req: Request, res: Response) => {
@@ -32,22 +32,13 @@ export class RestaurantController {
 
   update = async (req: Request, res: Response) => {
     const data = await validateBody(UpdateRestaurantDTO, req.body);
-    const result = await this.restaurantService.update(
-      Number(req.params.id),
-      req.user?.userId!,
-      req.user?.role! as SystemRole,
-      data,
-    );
+    const result = await this.restaurantService.update(Number(req.params.id), req.user?.userId!, req.user?.role! as SystemRole, data);
     sendSuccess(res, { message: 'Restaurant updated', restaurant: result });
   };
 
   updateStatus = async (req: Request, res: Response) => {
     const data = await validateBody(UpdateRestaurantStatusDTO, req.body);
-    const result = await this.restaurantService.updateStatus(
-      Number(req.params.id),
-      req.user?.role! as SystemRole,
-      data,
-    );
+    const result = await this.restaurantService.updateStatus(Number(req.params.id), req.user?.role! as SystemRole, data);
     sendSuccess(res, { message: 'Status updated', restaurant: { id: result.id, status: result.status } });
   };
 }

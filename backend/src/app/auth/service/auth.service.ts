@@ -7,34 +7,12 @@ import { MemberService } from '../../rbac/service/member.service.js';
 import { RestaurantMembership } from '../../rbac/type.js';
 import { RestaurantService } from '../../restaurant/service/restaurant.service.js';
 import { SystemRole } from '../../users/enums.js';
-import {
-  findUserByEmail,
-  findUserExistsByEmailOrPhone,
-  updateUserPassword,
-} from '../../users/repository/users.repo.js';
+import { findUserByEmail, findUserExistsByEmailOrPhone, updateUserPassword } from '../../users/repository/users.repo.js';
 import { UserService } from '../../users/service/users.service.js';
 import { ForgetPasswordDTO, LoginDTO, RegisterDTO, ResetPasswordDTO } from '../dto/auth.dto.js';
-import {
-  CannotSignupAsSystemAdmin,
-  IncorrectCredentials,
-  InvalidOTPError,
-  RestaurantDataRequiredError,
-  UserAlreadyExistsError,
-} from '../error.js';
-import {
-  createPasswordReset,
-  findLatestPasswordResetByUserId,
-  updatePasswordResetConsumedAt,
-} from '../repository/auth.repo.js';
-import {
-  comparePassword,
-  createAccessToken,
-  createRefreshToken,
-  generateOTP,
-  hashOTP,
-  hashPassword,
-  verifyRefreshToken,
-} from '../utils.js';
+import { CannotSignupAsSystemAdmin, IncorrectCredentials, InvalidOTPError, RestaurantDataRequiredError, UserAlreadyExistsError } from '../error.js';
+import { createPasswordReset, findLatestPasswordResetByUserId, updatePasswordResetConsumedAt } from '../repository/auth.repo.js';
+import { comparePassword, createAccessToken, createRefreshToken, generateOTP, hashOTP, hashPassword, verifyRefreshToken } from '../utils.js';
 import { TOKENS } from '../../../lib/di/tokens.js';
 import { passwordResetEmail } from '../templates/password-reset.js';
 import { MailjetEmailProvider } from '../../../lib/email/mailjet.js';
@@ -111,6 +89,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         phone: user.phone,
         system_role: user.system_role,
         created_at: user.created_at,
@@ -161,6 +140,7 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
+        name: user.name,
         phone: user.phone,
         system_role: user.system_role,
         created_at: user.created_at,

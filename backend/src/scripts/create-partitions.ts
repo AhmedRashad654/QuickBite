@@ -1,4 +1,4 @@
-import { db } from "../src/lib/knex/knex"; 
+import { db } from "../lib/knex/knex.js"; 
 
 const MONTHS_AHEAD = Number(process.env.MONTHS_AHEAD ?? 12);
 

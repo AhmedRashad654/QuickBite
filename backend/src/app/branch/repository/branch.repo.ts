@@ -1,6 +1,6 @@
 import { Knex } from 'knex';
 import { db } from '../../../lib/knex/knex.js';
-import { Branch, BranchWithRestaurant } from '../type.js';
+import { Branch } from '../type.js';
 import { NoFieldsToUpdateError } from '../errors.js';
 import { env } from '../../../lib/config/env.js';
 import { Restaurant } from '../../restaurant/type.js';
@@ -108,10 +108,7 @@ export async function updateBranch(id: number, data: Partial<Branch>): Promise<B
   return row;
 }
 
-export async function updateBranchStatus(
-  id: number,
-  data: { is_active?: boolean; commission?: number },
-): Promise<Branch> {
+export async function updateBranchStatus(id: number, data: { is_active?: boolean; commission?: number }): Promise<Branch> {
   const [row] = await db('restaurant_branches')
     .where('id', id)
     .update({
@@ -183,7 +180,7 @@ export async function findClosestBranches(lat: number, lng: number, limit: numbe
   return result.rows;
 }
 
-export async function findBranchWithRestaurant(branchId: number): Promise<BranchWithRestaurant | null> {
+export async function findBranchWithRestaurant(branchId: number): Promise<(Branch & { restaurant_status: string }) | null> {
   const row = await db('restaurant_branches as b')
     .join('restaurants as r', 'b.restaurant_id', 'r.id')
     .select([
@@ -191,13 +188,13 @@ export async function findBranchWithRestaurant(branchId: number): Promise<Branch
       'b.restaurant_id',
       'b.is_active',
       'b.accept_orders',
-      'p.delivery_fee',
-      'p.country_code',
-      'p.currency',
-      'p.lat',
-      'p.lng',
-      'p.label',
-      'p.address_text',
+      'b.delivery_fee',
+      'b.country_code',
+      'b.currency',
+      'b.lat',
+      'b.lng',
+      'b.label',
+      'b.address_text',
       'r.status as restaurant_status',
     ])
     .where('b.id', branchId)

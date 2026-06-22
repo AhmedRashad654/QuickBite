@@ -11,22 +11,23 @@ export async function up(knex: Knex): Promise<void> {
             restaurant_id         INTEGER NOT NULL,
             branch_id             INTEGER NOT NULL,
             customer_id           INTEGER NOT NULL,
-            customer_address_id   INTEGER NOT NULL,
+            customer_address_id   INTEGER,
 
-            delivery_lat          DECIMAL(10,7) NOT NULL,
-            delivery_lng          DECIMAL(10,7) NOT NULL,
-            delivery_address_text_snapshot TEXT NOT NULL,
+            delivery_lat          DECIMAL(10,7),
+            delivery_lng          DECIMAL(10,7),
+            delivery_address_text_snapshot TEXT,
 
             branch_lat            DECIMAL(10,7) NOT NULL,
             branch_lng            DECIMAL(10,7) NOT NULL,
 
+            order_type            TEXT NOT NULL CHECK (order_type IN ('delivery','pickup')),
             status                TEXT NOT NULL CHECK (status IN (
                                       'pending_payment','placed','accepted','rejected',
                                       'preparing','ready','assigned','picked','delivered','cancelled'
                                   )),
 
             subtotal              INT NOT NULL,
-            delivery_fee          INT NOT NULL,
+            delivery_fee          INT NOT NULL DEFAULT 0,
             service_fee           INT NOT NULL,
             total                 INT NOT NULL,
             commission            INT NOT NULL DEFAULT 0,

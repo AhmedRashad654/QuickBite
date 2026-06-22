@@ -1,128 +1,170 @@
+import type { MenuProduct } from "@/features/menu/types";
+import { toast } from "sonner";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 export type CartItem = {
-  productId: number;
+  product_id: number;
   name: string;
   price: number;
-  imageUrl: string | null;
+  image_url: string | null;
   quantity: number;
 };
 
 type CartState = {
   items: CartItem[];
-  branchId: number | null;
-  branchName: string;
+  branch_id: number | null;
+  branch_name: string;
   currency: string;
-  deliveryFee: number;
+  delivery_fee: number;
 
   setBranchInfo: (
-    branchId: number,
-    branchName: string,
+    branch_id: number,
+    branch_name: string,
     currency: string,
-    deliveryFee: number,
+    delivery_fee: number,
   ) => void;
-  addItem: (item: Omit<CartItem, "quantity">) => void;
-  removeItem: (productId: number) => void;
-  incrementQuantity: (productId: number) => void;
-  decrementQuantity: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  addItem: (item: Omit<CartItem, "quantity">, product: MenuProduct) => void;
+  removeItem: (product_id: number) => void;
+  incrementQuantity: (product_id: number, product: MenuProduct | null) => void;
+  decrementQuantity: (product_id: number) => void;
+  updateQuantity: (product_id: number, quantity: number) => void;
+  getTotalItem: () => number;
+  getSubTotal: () => number;
   clearCart: () => void;
 };
 
 export const useCartStore = create<CartState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       items: [],
-      branchId: null,
-      branchName: "",
+      branch_id: null,
+      branch_name: "",
       currency: "",
-      deliveryFee: 0,
+      delivery_fee: 0,
 
-      setBranchInfo: (branchId, branchName, currency, deliveryFee) =>
+      setBranchInfo: (branch_id, branch_name, currency, delivery_fee) =>
         set((state) => {
-          if (state.branchId && state.branchId !== branchId) {
+          if (state.branch_id && state.branch_id !== branch_id) {
             return {
               items: [],
-              branchId,
-              branchName,
+              branch_id,
+              branch_name,
               currency,
-              deliveryFee,
+              delivery_fee,
             };
           }
-          return { branchId, branchName, currency, deliveryFee };
+          return { branch_id, branch_name, currency, delivery_fee };
         }),
 
-      addItem: (item) =>
+      addItem: (item, product: MenuProduct) =>
         set((state) => {
+          if (!product?.is_available) {
+            toast.warning("product unavaliable currently");
+            return { items: state.items };
+          }
           const existing = state.items.find(
-            (i) => i.productId === item.productId,
+            (i) => i.product_id === item.product_id,
           );
+
           if (existing) {
+            if (existing.quantity >= product.stock) {
+              toast.warning("There are not enough quantities in the stock");
+              return { items: state.items };
+            }
+
             return {
               items: state.items.map((i) =>
-                i.productId === item.productId
+                i.product_id === item.product_id
                   ? { ...i, quantity: i.quantity + 1 }
                   : i,
               ),
             };
           }
-          return { items: [...state.items, { ...item, quantity: 1 }] };
+
+          if (product.stock > 0) {
+            return { items: [...state.items, { ...item, quantity: 1 }] };
+          }
+          toast.warning("There are not enough quantities in the stock");
+          return { items: state.items };
         }),
 
       removeItem: (productId) =>
         set((state) => ({
-          items: state.items.filter((i) => i.productId !== productId),
+          items: state.items.filter((i) => i.product_id !== productId),
         })),
 
-      incrementQuantity: (productId) =>
-        set((state) => ({
-          items: state.items.map((i) =>
-            i.productId === productId
-              ? { ...i, quantity: i.quantity + 1 }
-              : i,
-          ),
-        })),
-
-      decrementQuantity: (productId) =>
+      incrementQuantity: (product_id: number, product: MenuProduct | null) =>
         set((state) => {
-          const item = state.items.find((i) => i.productId === productId);
+          if (!product?.is_available || !product) {
+            toast.warning("product unavaliable currently");
+            return { items: state.items };
+          }
+          const existing = state.items.find((i) => i.product_id === product_id);
+          if (existing && existing.quantity >= product.stock) {
+            toast.warning("There are not enough quantities in the stock");
+            return { items: state.items };
+          }
+
+          return {
+            items: state.items.map((i) =>
+              i.product_id === product_id
+                ? { ...i, quantity: i.quantity + 1 }
+                : i,
+            ),
+          };
+        }),
+      decrementQuantity: (product_id) =>
+        set((state) => {
+          const item = state.items.find((i) => i.product_id === product_id);
           if (!item) return state;
           if (item.quantity <= 1) {
             return {
-              items: state.items.filter((i) => i.productId !== productId),
+              items: state.items.filter((i) => i.product_id !== product_id),
             };
           }
           return {
             items: state.items.map((i) =>
-              i.productId === productId
+              i.product_id === product_id
                 ? { ...i, quantity: i.quantity - 1 }
                 : i,
             ),
           };
         }),
 
-      updateQuantity: (productId, quantity) =>
+      updateQuantity: (product_id, quantity) =>
         set((state) => {
           if (quantity <= 0) {
             return {
-              items: state.items.filter((i) => i.productId !== productId),
+              items: state.items.filter((i) => i.product_id !== product_id),
             };
           }
           return {
             items: state.items.map((i) =>
-              i.productId === productId ? { ...i, quantity } : i,
+              i.product_id === product_id ? { ...i, quantity } : i,
             ),
           };
         }),
 
+      getTotalItem: () => {
+        return get().items.reduce((total, item) => total + item.quantity, 0);
+      },
+
+      getSubTotal: () => {
+        const totalInMinorUnit = get().items.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0,
+        );
+        return totalInMinorUnit / 100;
+      },
+
       clearCart: () =>
         set({
           items: [],
-          branchId: null,
-          branchName: "",
+          branch_id: null,
+          branch_name: "",
           currency: "",
-          deliveryFee: 0,
+          delivery_fee: 0,
         }),
     }),
     {

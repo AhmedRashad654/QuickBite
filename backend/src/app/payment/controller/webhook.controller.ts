@@ -11,6 +11,7 @@ export class WebhookController {
 
   kashier = async (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log('kashier enter here');
       if (!req.rawBody) throw MalformedWebhookError;
 
       const sigHeader = req.headers['x-kashier-signature'];

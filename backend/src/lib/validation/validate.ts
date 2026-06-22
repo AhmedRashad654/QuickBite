@@ -1,4 +1,3 @@
-
 import { plainToInstance } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 import { AppError } from '../error/AppError.js';
@@ -28,6 +27,6 @@ export async function validateBody<T extends Object>(cls: new () => T, body: unk
     const errorMessages = formatErrors(errors);
     throw new AppError(errorMessages.join('\n'), 400);
   }
-  
+
   return instance;
 }

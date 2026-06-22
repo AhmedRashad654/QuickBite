@@ -1,12 +1,7 @@
 import { Knex } from 'knex';
 import { CreateOrderInput, ListCustomerOrdersFilter, ListRestaurantBranchOrdersFilter, Order } from '../types.js';
 import { OrderStatus } from '../enums.js';
-import {
-  applyCursorPagination,
-  applyFilters,
-  FilterParams,
-  PaginationParams,
-} from '../../../lib/http/pagination/cursor-pagination.js';
+import { applyCursorPagination, applyFilters, FilterParams, PaginationParams } from '../../../lib/http/pagination/cursor-pagination.js';
 import { db } from '../../../lib/knex/knex.js';
 
 export const ORDER_COLUMNS = [
@@ -14,7 +9,6 @@ export const ORDER_COLUMNS = [
   'public_id',
   'country_code',
   'restaurant_id',
-  'restaurant_owner_id',
   'branch_id',
   'customer_id',
   'customer_address_id',
@@ -23,6 +17,7 @@ export const ORDER_COLUMNS = [
   'delivery_address_text_snapshot',
   'branch_lat',
   'branch_lng',
+  'order_type',
   'status',
   'subtotal',
   'delivery_fee',
@@ -66,7 +61,10 @@ export async function findOrderByPublicId(publicId: string, conn: Knex = db): Pr
 export async function findReadyUnassigned(limit: number, conn: Knex = db): Promise<Order[]> {
   const rows = await conn('orders')
     .select(ORDER_COLUMNS)
-    .where('status', 'ready')
+    .where({
+      status: 'ready',
+      order_type: 'delivery',
+    })
     .whereNull('delivery_agent_id')
     .orderBy('created_at', 'asc')
     .limit(limit);
@@ -104,12 +102,7 @@ export async function releaseAssignedOrderToReady(publicId: string, agentId: num
   return updated;
 }
 
-export async function findAgentTasks(
-  agentId: number,
-  statuses: string[] | undefined,
-  limit: number,
-  conn: Knex = db,
-): Promise<Order[]> {
+export async function findAgentTasks(agentId: number, statuses: string[] | undefined, limit: number, conn: Knex = db): Promise<Order[]> {
   let q = conn('orders')
     .select(ORDER_COLUMNS as unknown as string[])
     .where('delivery_agent_id', agentId);
@@ -122,12 +115,7 @@ export async function updateOrderCommission(publicId: string, commission: number
   await conn('orders').where({ public_id: publicId }).update({ commission, updated_at: conn.fn.now() });
 }
 
-export async function updateOrderStatus(
-  publicId: string,
-  status: OrderStatus,
-  stampColumn: string | null,
-  conn: Knex = db,
-): Promise<Order> {
+export async function updateOrderStatus(publicId: string, status: OrderStatus, stampColumn: string | null, conn: Knex = db): Promise<Order> {
   const update: Record<string, unknown> = {
     status,
     updated_at: conn.fn.now(),
@@ -142,11 +130,7 @@ export async function updateOrderStatus(
   return row;
 }
 
-export async function findOrdersByCustomer(
-  filter: ListCustomerOrdersFilter,
-  pagination: PaginationParams,
-  conn: Knex,
-): Promise<Order[]> {
+export async function findOrdersByCustomer(filter: ListCustomerOrdersFilter, pagination: PaginationParams, conn: Knex): Promise<Order[]> {
   const query = conn('orders')
     .select(ORDER_COLUMNS as unknown as string[])
     .where('customer_id', filter.customerId)

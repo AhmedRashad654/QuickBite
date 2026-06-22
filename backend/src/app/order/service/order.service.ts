@@ -17,7 +17,7 @@ import { multiplyMinor, sumMinor } from '../../../lib/utils/money.js';
 import { randomUUID } from 'crypto';
 import { db } from '../../../lib/knex/knex.js';
 import { createOrder, findOrderByPublicId, updateOrderStatus } from '../repository/order.repo.js';
-import { OrderStatus, PaymentMethod } from '../enums.js';
+import { OrderStatus, OrderType, PaymentMethod } from '../enums.js';
 import { CustomerAddress } from '../../customer_address/type.js';
 import { bulkInsertItems, findItemsByOrderIds } from '../repository/order-item.repo.js';
 import { OrderDetailResponseDTO, OrderResponseDTO, OrderSummaryResponseDTO } from '../dto/order.response.dto.js';
@@ -25,6 +25,8 @@ import { Server as IoServer } from 'socket.io';
 import { container } from '../../../lib/di/container.js';
 import { TOKENS } from '../../../lib/di/tokens.js';
 import { PaymentService } from '../../payment/service/payment.service.js';
+import { env } from '../../../lib/config/env.js';
+import { AppError } from '../../../lib/error/AppError.js';
 
 const SERVICE_FEE_MINOR = 1000;
 
@@ -37,68 +39,63 @@ export class OrderService {
   }
 
   async placeOrder(user: JwtPayloadType, body: CreateOrderDTO) {
-    const branch = await findBranchWithRestaurant(body.branchId);
+    const branch = await findBranchWithRestaurant(body.branch_id);
     if (!branch) throw BranchNotFoundError;
-    if (
-      !branch?.branch.is_active ||
-      !branch?.branch.accept_orders ||
-      branch.restaurantStatus !== RestaurantStatus.ACTIVE
-    ) {
+    if (!branch?.is_active || !branch?.accept_orders || branch.restaurant_status !== RestaurantStatus.ACTIVE) {
       throw BranchNotAcceptingOrdersError;
     }
 
-    const address = await findAddressById(body.customerAddressId);
-    if (!address) throw AddressNotFoundError;
-    if (Number(address.user_id) !== Number(user.userId)) throw AddressPermissionDeniedError;
+    let address = null;
+    if (body.order_type === OrderType.DELIVERY) {
+      address = await findAddressById(body.customer_address_id);
+      if (!address) throw AddressNotFoundError;
+      if (Number(address.user_id) !== Number(user.userId)) throw AddressPermissionDeniedError;
+      await this.validateDeliveryZone(Number(branch.lat), Number(branch.lng), Number(address.lat), Number(address.lng));
+    }
 
-    const productIds = body.items.map((i) => i.productId);
-    const products = await getProductsByBranchAndIds(body.branchId, productIds);
+    const productIds = body.items.map((i) => i.product_id);
+    const products = await getProductsByBranchAndIds(body.branch_id, productIds);
     const orderLineDrafts = this.buildOrderLineDrafts(body.items, products);
-
     const subtotal = sumMinor(orderLineDrafts.map((l) => l.line_total));
-    const total = subtotal + branch.branch.delivery_fee + SERVICE_FEE_MINOR;
+    const total = body.order_type === OrderType.DELIVERY ? subtotal + branch.delivery_fee + SERVICE_FEE_MINOR : subtotal + SERVICE_FEE_MINOR;
 
     const publicId = randomUUID();
-
     const trx = await db.transaction();
 
     let order: Order;
     let items: OrderItem[];
-
     try {
-      const rows = await getBranchProductsForUpdate(body.branchId, productIds, trx);
-      const byProduct = new Map<number, { stock: number; isAvailable: boolean }>();
-      for (const r of rows) byProduct.set(Number(r.product_id), { stock: r.stock, isAvailable: r.is_available });
-
+      const rows = await getBranchProductsForUpdate(body.branch_id, productIds, trx);
+      const byProduct = new Map<number, { stock: number; is_available: boolean }>();
+      for (const r of rows) byProduct.set(Number(r.product_id), { stock: r.stock, is_available: r.is_available });
       for (const it of body.items) {
-        const newStock = byProduct.get(it.productId)!.stock - it.quantity;
-        await updateBranchProductDetails(branch.branch.id, it.productId, { stock: newStock });
+        const newStock = byProduct.get(it.product_id)!.stock - it.quantity;
+        await updateBranchProductDetails(branch.id, it.product_id, { stock: newStock }, trx);
       }
-
       order = await createOrder(
         {
           public_id: publicId,
-          branch_id: Number(branch.branch.id),
-          restaurant_id: Number(branch.branch.restaurant_id),
-          country_code: branch.branch.country_code,
+          branch_id: Number(branch.id),
+          restaurant_id: Number(branch.restaurant_id),
+          country_code: branch.country_code,
           customer_id: Number(user.userId),
-          delivery_lat: Number(address.lat),
-          delivery_lng: Number(address.lng),
-          delivery_address_text_snapshot: this.flattenAddress(address),
-          branch_lat: Number(branch.branch.lat),
-          branch_lng: Number(branch.branch.lng),
-          currency: branch.branch.currency,
-          customer_address_id: Number(address.id),
-          status: body.paymentMethod === PaymentMethod.ONLINE ? OrderStatus.PENDING_PAYMENT : OrderStatus.PLACED,
+          delivery_lat: address ? Number(address.lat) : null,
+          delivery_lng: address ? Number(address.lng) : null,
+          delivery_address_text_snapshot: address ? this.flattenAddress(address) : null,
+          branch_lat: Number(branch.lat),
+          branch_lng: Number(branch.lng),
+          currency: branch.currency,
+          customer_address_id: address ? Number(address.id) : null,
+          status: body.payment_method === PaymentMethod.ONLINE ? OrderStatus.PENDING_PAYMENT : OrderStatus.PLACED,
+          order_type: body.order_type,
           subtotal,
-          delivery_fee: branch.branch.delivery_fee,
-          service_fee: SERVICE_FEE_MINOR,
+          delivery_fee: address ? branch.delivery_fee / 100 : 0,
+          service_fee: SERVICE_FEE_MINOR / 100,
           total,
-          payment_method: body.paymentMethod,
+          payment_method: body.payment_method,
         },
         trx,
       );
-
       items = await bulkInsertItems(
         orderLineDrafts.map((l) => ({
           order_id: Number(order.id),
@@ -111,15 +108,13 @@ export class OrderService {
         })),
         trx,
       );
-
       await trx.commit();
     } catch (err) {
       await trx.rollback();
       throw err;
     }
-
     let paymentInfo;
-    if (body.paymentMethod === PaymentMethod.ONLINE) {
+    if (body.payment_method === PaymentMethod.ONLINE) {
       try {
         const result = await this.paymentService.initOnlinePayment(order);
         paymentInfo = {
@@ -129,15 +124,13 @@ export class OrderService {
         };
       } catch (err) {
         await updateOrderStatus(publicId, OrderStatus.CANCELLED, 'cancelled_at');
-        this.releaseStockSafe(branch.branch.id, body.items);
+        this.releaseStockSafe(branch.id, body.items);
         throw err;
       }
     }
-
-    if (body.paymentMethod === PaymentMethod.COD) {
-      this.io.to(`branch:${branch.branch.id}`).emit('order.created', OrderSummaryResponseDTO.from(order, items.length));
+    if (body.payment_method === PaymentMethod.COD) {
+      this.io.to(`branch:${branch.id}`).emit('order.created', OrderSummaryResponseDTO.from(order, items.length));
     }
-
     return OrderResponseDTO.from(order, items, paymentInfo);
   }
 
@@ -149,10 +142,7 @@ export class OrderService {
   }
 
   // ── private helpers ──────────────────────────────────────────────────
-  private buildOrderLineDrafts(
-    requested: Array<{ productId: number; quantity: number }>,
-    products: BranchProduct[],
-  ): OrderLineDraft[] {
+  private buildOrderLineDrafts(requested: Array<{ product_id: number; quantity: number }>, products: BranchProduct[]): OrderLineDraft[] {
     const byProduct = new Map<number, BranchProduct>();
     for (const p of products) byProduct.set(Number(p.product_id), p);
 
@@ -160,17 +150,17 @@ export class OrderService {
     const drafts: OrderLineDraft[] = [];
 
     for (const it of requested) {
-      const p = byProduct.get(it.productId);
+      const p = byProduct.get(it.product_id);
       if (!p || !p.is_available) {
-        unavailableItems.push({ product_id: it.productId, requested: it.quantity, available: 0 });
+        unavailableItems.push({ product_id: it.product_id, requested: it.quantity, available: 0 });
         continue;
       }
       if (p.stock < it.quantity) {
-        unavailableItems.push({ product_id: it.productId, requested: it.quantity, available: p.stock });
+        unavailableItems.push({ product_id: it.product_id, requested: it.quantity, available: p.stock });
         continue;
       }
       drafts.push({
-        product_id: it.productId,
+        product_id: it.product_id,
         quantity: it.quantity,
         unit_price: p.price,
         line_total: multiplyMinor(p.price, it.quantity),
@@ -182,18 +172,34 @@ export class OrderService {
     return drafts;
   }
 
-  private async releaseStockSafe(
-    branchId: number,
-    items: Array<{ productId: number; quantity: number }>,
-  ): Promise<void> {
+  private async releaseStockSafe(branchId: number, items: Array<{ product_id: number; quantity: number }>): Promise<void> {
     for (const it of items) {
       const newStock = it.quantity;
-      await updateBranchProductDetails(branchId, it.productId, { stock: newStock });
+      await updateBranchProductDetails(branchId, it.product_id, { stock: newStock });
     }
   }
 
   private flattenAddress(a: CustomerAddress): string {
     const parts = [a.building, a.street, a.city, a.country].filter(Boolean);
     return parts.join(', ');
+  }
+
+  private async validateDeliveryZone(branchLat: number, branchLng: number, customerLat: number, customerLng: number): Promise<void> {
+    const radiusMeters = env.delivery.radiusMeters || 5000;
+    const result = await db.raw<{ rows: { distance: number }[] }>(
+      `
+    SELECT ST_Distance(
+      ST_MakePoint(?, ?)::geography,
+      ST_MakePoint(?, ?)::geography 
+    ) as distance
+    `,
+      [branchLng, branchLat, customerLng, customerLat],
+    );
+
+    const distanceMeters = result.rows[0]?.distance;
+
+    if (distanceMeters > radiusMeters) {
+      throw new AppError(`The restaurant is outside your delivery radius. Current distance: ${Math.round(distanceMeters / 1000)} km`, 400);
+    }
   }
 }

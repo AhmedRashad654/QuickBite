@@ -1,4 +1,4 @@
-import { OrderStatus, PaymentMethod } from '../enums.js';
+import { OrderStatus, OrderType, PaymentMethod } from '../enums.js';
 import { Order, OrderItem } from '../types.js';
 
 export class OrderItemResponseDTO {
@@ -55,6 +55,7 @@ export interface OrderResponsePaymentInfo {
 export class OrderResponseDTO {
   public_id!: string;
   status!: OrderStatus;
+  order_type!: OrderType;
   payment_method!: PaymentMethod;
   branch!: { id: number };
   restaurant!: { id: number };
@@ -72,6 +73,7 @@ export class OrderResponseDTO {
     const dto = new OrderResponseDTO();
     dto.public_id = order.public_id;
     dto.status = order.status;
+    dto.order_type = order.order_type;
     dto.payment_method = order.payment_method;
     dto.branch = { id: Number(order.branch_id) };
     dto.restaurant = { id: Number(order.restaurant_id) };

@@ -4,7 +4,7 @@ import { createApp } from './app.js';
 import { env } from './lib/config/env.js';
 import { db } from './lib/knex/knex.js';
 import { TOKENS } from './lib/di/tokens.js';
-import { container } from '../src/lib/di/container.js';
+import { container } from './lib/di/container.js';
 import { attachWsServer } from './lib/webSocket/ws-server.js';
 import { logger } from './lib/logger/logger.js';
 

@@ -9,6 +9,7 @@ export async function updateBranchProductDetails(
   branchId: number,
   productId: number,
   data: { price?: number; stock?: number; is_available?: boolean },
+  conn: Knex.Transaction | Knex = db,
 ): Promise<ProductBranchDetails> {
   const updateData: Record<string, unknown> = {};
   if (data.price !== undefined) updateData.price = data.price;
@@ -17,7 +18,7 @@ export async function updateBranchProductDetails(
   if (Object.keys(updateData).length === 0) {
     throw NoFieldsToUpdateError;
   }
-  const [row] = await db('product_branch_details')
+  const [row] = await conn('product_branch_details')
     .where('branch_id', branchId)
     .where('product_id', productId)
     .update(updateData)

@@ -12,9 +12,11 @@
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "migrate:make": "tsx node_modules/knex/bin/cli.js migrate:make --knexfile src/lib/knex/knexfile.ts",
-    "migrate:latest": "tsx node_modules/knex/bin/cli.js migrate:latest --knexfile src/lib/knex/knexfile.ts",
     "migrate:rollback": "tsx node_modules/knex/bin/cli.js migrate:rollback --knexfile src/lib/knex/knexfile.ts",
-    "script:create-partitions": "tsx scripts/create-partitions.ts"
+    "migrate:latest:dev": "tsx node_modules/knex/bin/cli.js migrate:latest --knexfile src/lib/knex/knexfile.ts",
+    "migrate:latest": "npx knex migrate:latest --knexfile dist/lib/knex/knexfile.js",
+    "script:create-partitions:dev": "tsx src/scripts/create-partitions.ts",
+    "script:create-partitions": "node dist/scripts/create-partitions.js"
   },
   "keywords": [],
   "author": "",

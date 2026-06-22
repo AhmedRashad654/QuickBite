@@ -38,12 +38,13 @@ import { FinanceController } from '../../app/finance/controller/finance.controll
 import { AgentService } from '../../app/agent/service/agent.service.js';
 import { AgentController } from '../../app/agent/controller/agent.controller.js';
 import { IEmailProvider } from '../email/email.interface.js';
+import { IPaymentProvider } from '../payments/kashier/types.js';
 
 // Infrastructure
 container.registerSingleton<Logger>(TOKENS.Logger, Logger);
 container.registerSingleton<ICacheProvider>(TOKENS.CacheProvider, RedisCacheProvider);
 container.registerSingleton<IEmailProvider>(TOKENS.EmailProvider, MailjetEmailProvider);
-container.registerInstance(TOKENS.KashierProvider, kashierClient);
+container.registerSingleton<IPaymentProvider>(TOKENS.KashierProvider, kashierClient);
 
 // Service
 container.registerSingleton<UserService>(TOKENS.UserService, UserService);

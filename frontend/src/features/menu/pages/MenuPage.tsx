@@ -1,4 +1,4 @@
-import { Loader2, ShoppingBag } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { useBranchMenu } from "../hooks/useBranchMenu";
 import BranchHeader from "../components/BranchHeader";
 import CartSheet from "../components/CartSheet";
 import CategorySection from "../components/CategorySection";
+import Loading from "@/components/shared/Loading";
 
 const MenuPage = () => {
   const { branchId } = useParams<{ branchId: string }>();
@@ -16,7 +17,8 @@ const MenuPage = () => {
   );
   const [cartOpen, setCartOpen] = useState(false);
   const setBranchInfo = useCartStore((s) => s.setBranchInfo);
-  const totalItems = useCartStore((s) => s.items.reduce((a, i) => a + i.quantity, 0));
+  const totalItems = useCartStore((s) => s.getTotalItem());
+  const subTotal = useCartStore((s) => s.getSubTotal());
 
   useEffect(() => {
     if (branch) {
@@ -30,19 +32,24 @@ const MenuPage = () => {
   }, [branch, setBranchInfo]);
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[60dvh] items-center justify-center">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="size-4 animate-spin" />
-          Loading menu
-        </div>
-      </div>
-    );
+    return <Loading text="Loading menu" />;
+  }
+
+  function findProductInMenu(productId: number) {
+    if (!branch) return null;
+    for (const category of branch.menu) {
+      const product = category.products.find((p) => p.id === productId);
+      if (product) {
+        return product;
+      }
+    }
+
+    return null;
   }
 
   if (!branch) {
     return (
-      <div className="flex min-h-[60dvh] items-center justify-center">
+      <div className="flex min-h-[80dvh] items-center justify-center">
         <p className="text-sm text-muted-foreground">Branch not found</p>
       </div>
     );
@@ -70,16 +77,16 @@ const MenuPage = () => {
             onClick={() => setCartOpen(true)}
           >
             <ShoppingBag />
-            <span>{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
-            <Badge
-              variant="secondary"
-              className="ml-1 text-xs tabular-nums"
-            >
-              {(branch.currency === "EGP" ? "E£" : branch.currency === "SAR" ? "SR" : "")}
-              {(useCartStore.getState().items.reduce(
-                (sum, i) => sum + i.price * i.quantity,
-                0,
-              ) / 100).toFixed(2)}
+            <span>
+              {totalItems} item{totalItems !== 1 ? "s" : ""}
+            </span>
+            <Badge variant="secondary" className="ml-1 text-xs tabular-nums">
+              {branch.currency === "EGP"
+                ? "E£"
+                : branch.currency === "SAR"
+                  ? "SR"
+                  : ""}
+              {subTotal}
             </Badge>
           </Button>
         </div>
@@ -89,6 +96,7 @@ const MenuPage = () => {
         open={cartOpen}
         onOpenChange={setCartOpen}
         currency={branch.currency}
+        findProductInMenu={(productId: number) => findProductInMenu(productId)}
       />
     </div>
   );

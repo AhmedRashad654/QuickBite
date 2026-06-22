@@ -13,7 +13,7 @@ export class MemberController {
   createMember = async (req: Request, res: Response) => {
     const data = await validateBody(CreateMemberDTO, req.body);
     const result = await this.memberService.createMember(Number(req.params.restaurantId), data);
-    sendSuccess(res, result, 201);
+    sendSuccess(res, result, undefined,201);
   };
 
   listMembers = async (req: Request, res: Response) => {

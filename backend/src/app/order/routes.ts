@@ -1,6 +1,6 @@
 import {Router} from "express";
 import {authenticate} from "../../lib/auth/guard.js";
-import {idempotency} from "../../lib/idempotency/idempotency.js";
+// import {idempotency} from "../../lib/idempotency/idempotency.js";
 import {container} from "../../lib/di/container.js";
 import {TOKENS} from "../../lib/di/tokens.js";
 import {OrderController} from "./controller/order.controller.js";
@@ -13,7 +13,7 @@ const orderController = container.resolve<OrderController>(TOKENS.OrderControlle
 orderRouter.post(
     "/",
     authenticate,
-    idempotency({strict: true}),
+    // idempotency({strict: true}),
     orderController.placeOrder,
 );
 

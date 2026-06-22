@@ -6,24 +6,22 @@ type BranchHeaderProps = {
   branch: BranchMenu;
 };
 
-const formatPrice = (price: number, currency: string) => {
-  const formatted = (price / 100).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${formatted} ${currency}`;
-};
-
 const BranchHeader = ({ branch }: BranchHeaderProps) => {
   const now = new Date();
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const [openHour, openMin] = (branch.opens_at ?? "00:00")
+    .split(":")
+    .map(Number);
+  const [closeHour, closeMin] = (branch.closes_at ?? "00:00")
+    .split(":")
+    .map(Number);
 
-  const [openHour, openMin] = (branch.opens_at ?? "00:00").split(":").map(Number);
-  const [closeHour, closeMin] = (branch.closes_at ?? "00:00").split(":").map(Number);
   const openMinutes = openHour * 60 + openMin;
   const closeMinutes = closeHour * 60 + closeMin;
-
-  const isOpen = branch.accept_orders && currentMinutes >= openMinutes && currentMinutes <= closeMinutes;
+  const isOpen =
+    branch.accept_orders &&
+    currentMinutes >= openMinutes &&
+    currentMinutes <= closeMinutes;
 
   return (
     <div className="rounded-lg border bg-card p-5 sm:p-6">
@@ -61,7 +59,7 @@ const BranchHeader = ({ branch }: BranchHeaderProps) => {
               <Clock className="size-3" />
               {branch.opens_at?.slice(0, 5)} - {branch.closes_at?.slice(0, 5)}
             </Badge>
-            <Badge variant="outline">{formatPrice(0, branch.currency).split(" ").slice(1).join(" ")}</Badge>
+            <Badge variant="outline">{branch?.currency}</Badge>
           </div>
         </div>
       </div>

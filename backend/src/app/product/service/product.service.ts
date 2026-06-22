@@ -58,6 +58,7 @@ export class ProductService {
   findByBranch = async (branchId: number) => {
     const branch = await findBranchByIdWithRestaurant(branchId);
     if (!branch) throw BranchNotFoundError;
+    
     const products = await findProductsByBranch(branchId);
     const categoriesMap: Record<number, any> = {};
     products.forEach((row) => {

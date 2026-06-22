@@ -5,9 +5,9 @@ export async function up(knex: Knex): Promise<void> {
         CREATE EXTENSION IF NOT EXISTS postgis;
         
         CREATE TABLE restaurant_branches (
-            id BIGSERIAL PRIMARY KEY,
+            id SERIAL PRIMARY KEY,
             restaurant_id INT NOT NULL,
-            country_code TEXT NOT NULL CHECK(type IN ('EG','SA')),
+            country_code TEXT NOT NULL CHECK(country_code IN ('EG','SA')),
             address_text TEXT NOT NULL,
             label TEXT NOT NULL,
             lat DECIMAL(9, 6) NOT NULL,
@@ -19,7 +19,7 @@ export async function up(knex: Knex): Promise<void> {
             created_at TIMESTAMP NOT NULL DEFAULT NOW(),
             updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
             delivery_fee INTEGER NOT NULL DEFAULT 0,
-            currency TEXT NOT NULL CHECK(type IN ('EGP','SAR')),
+            currency TEXT NOT NULL CHECK(currency IN ('EGP','SAR')),
             commission INT NOT NULL,
             location geography(Point, 4326) GENERATED ALWAYS AS ( ST_MakePoint(lng::float, lat::float)::geography) STORED,
             

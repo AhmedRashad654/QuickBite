@@ -4,7 +4,7 @@ import { container } from '../di/container.js';
 import { ICacheProvider } from '../cache/cache.interface.js';
 import { TOKENS } from '../di/tokens.js';
 
-const DEFAULT_TTL = toSeconds(5, 'm'); 
+const DEFAULT_TTL = toSeconds(3, 'm');
 
 interface IdempotencyOptions {
   strict?: boolean;
@@ -36,26 +36,31 @@ export function idempotency(options: IdempotencyOptions = {}) {
 
       if (!isLockAcquired) {
         const cachedValue = await cacheProvider.get(key);
-        
         if (cachedValue === 'PROCESSING') {
           return res.status(409).json({ error: 'Concurrent request in progress. Please wait.' });
         }
-        
+
         if (cachedValue) {
-          return res.status(200).json(JSON.parse(cachedValue));
+          const { status, body } = JSON.parse(cachedValue);
+          return res.status(status).json(body); 
         }
       }
 
       const originalJson = res.json.bind(res);
 
       res.json = (body: any) => {
-        cacheProvider.set(key, JSON.stringify(body), ttlSeconds);
+        const cacheData = {
+          status: res.statusCode,
+          body: body,
+        };
+
+        cacheProvider.set(key, JSON.stringify(cacheData), ttlSeconds);
         return originalJson(body);
       };
 
       next();
-    } catch(error) {
-      console.log(error)
+    } catch (error) {
+      console.log(error);
       if (strict) {
         return res.status(503).json({ error: 'Idempotency service unavailable' });
       }

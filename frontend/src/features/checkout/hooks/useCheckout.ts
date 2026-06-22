@@ -8,8 +8,7 @@ export const usePlaceOrder = () => {
 
   const mutation = useMutation({
     mutationFn: (payload: PlaceOrderPayload) =>
-      placeOrder(payload, idempotencyKey),
-    meta: { successMessage: "Order placed successfully!" },
+    placeOrder(payload, idempotencyKey),
     onSuccess: () => {
       resetKey();
     },

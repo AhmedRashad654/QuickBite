@@ -5,13 +5,12 @@ import { routes } from './routes.js';
 import { AppError } from './lib/error/AppError.js';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
-import { env } from './lib/config/env.js';
 import cors from 'cors';
 
 export function createApp() {
   const app = express();
   app.use(helmet());
-  app.use(cors({ origin: env.cors.origins, credentials: true }));
+  app.use(cors({ origin: true, credentials: true }));
   app.set('query parser', 'extended');
   app.use(express.json());
   app.use(cookieParser());

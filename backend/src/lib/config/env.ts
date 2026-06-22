@@ -1,23 +1,19 @@
 import path from 'path';
 import { config } from 'dotenv';
 import { z } from 'zod';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-config({ path: path.resolve(__dirname, '../../../.env') });
+config({ path: path.resolve(process.cwd(), '.env') });
 
 const schema = z.object({
-  PORT: z.string().default('3000'),
-  NODE_ENV: z.string().default('development'),
-  CORS_ORIGINS: z.string().default('http://localhost:3000'),
+  PORT: z.string(),
+  NODE_ENV: z.string(),
+  CORS_ORIGINS: z.string(),
 
-  DB_HOST: z.string().default('localhost'),
-  DB_PORT: z.string().default('5432'),
-  DB_USERNAME: z.string(),
-  DB_PASSWORD: z.string(),
-  DB_NAME: z.string(),
+  DB_HOST: z.string(),
+  DB_PORT: z.string(),
+  POSTGRES_USER: z.string(),
+  POSTGRES_PASSWORD: z.string(),
+  POSTGRES_DB: z.string(),
   DB_POOL_MAX: z.string().default('10'),
   DB_MIGRATION_DIRECTORY: z.string(),
   DB_MIGRATION_EXTENSION: z.string(),
@@ -27,9 +23,9 @@ const schema = z.object({
   ACCESS_EXPIRES_IN: z.string(),
   REFRESH_EXPIRES_IN: z.string(),
 
-  REDIS_HOST: z.string().default('localhost'),
-  REDIS_PORT: z.string().default('6379'),
-  REDIS_PASSWORD: z.string().default(''),
+  REDIS_HOST: z.string(),
+  REDIS_PORT: z.string(),
+  REDIS_PASSWORD: z.string(),
 
   MAILJET_API_KEY: z.string(),
   MAILJET_SECRET_KEY: z.string(),
@@ -38,27 +34,27 @@ const schema = z.object({
 
   WS_HEARTBEAT_SEC: z.string().default('30'),
 
-  KASHIER_BASE_URL: z.string().default('https://test-api.kashier.io'),
-  KASHIER_FEP_BASE_URL: z.string().default('https://test-fep.kashier.io'),
+  KASHIER_BASE_URL: z.string(),
+  KASHIER_FEP_BASE_URL: z.string(),
   KASHIER_MERCHANT_ID: z.string(),
   KASHIER_API_KEY: z.string(),
   KASHIER_SECRET_KEY: z.string(),
-  KASHIER_PAYMENT_TYPE: z.string().default('credit'),
+  KASHIER_PAYMENT_TYPE: z.string(),
   KASHIER_RETURN_URL: z.string(),
   KASHIER_WEBHOOK_URL: z.string(),
 
-  PAYMENT_SESSION_TIMEOUT_MIN: z.string().default('15'),
+  PAYMENT_SESSION_TIMEOUT_MIN: z.string(),
 
   // Deliveries / agents
-  ASSIGNMENT_TICK_SEC: z.string().default('10'),
-  ASSIGNMENT_BATCH: z.string().default('20'),
-  ASSIGNMENT_MAX_ATTEMPTS: z.string().default('3'),
-  ASSIGNMENT_RADIUS_METERS: z.string().default('5000'),
-  ASSIGNMENT_OFFER_TTL_SEC: z.string().default('30'),
-  ASSIGNMENT_CANDIDATES: z.string().default('5'),
-  PRESENCE_STALE_SEC: z.string().default('300'),
-  ASSIGNMENT_CLAIM_TTL_SEC: z.string().default('300'),
-  AGENT_EARNING_SHARE_BPS: z.string().default('8000'),
+  ASSIGNMENT_TICK_SEC: z.string(),
+  ASSIGNMENT_BATCH: z.string(),
+  ASSIGNMENT_MAX_ATTEMPTS: z.string(),
+  ASSIGNMENT_RADIUS_METERS: z.string(),
+  ASSIGNMENT_OFFER_TTL_SEC: z.string(),
+  ASSIGNMENT_CANDIDATES: z.string(),
+  PRESENCE_STALE_SEC: z.string(),
+  ASSIGNMENT_CLAIM_TTL_SEC: z.string(),
+  AGENT_EARNING_SHARE_BPS: z.string(),
 });
 
 const parsed = schema.parse(process.env);
@@ -69,11 +65,11 @@ export const env = {
   db: {
     host: parsed.DB_HOST,
     port: Number(parsed.DB_PORT),
-    username: parsed.DB_USERNAME,
-    password: parsed.DB_PASSWORD,
-    name: parsed.DB_NAME,
+    username: parsed.POSTGRES_USER,
+    password: parsed.POSTGRES_PASSWORD,
+    name: parsed.POSTGRES_DB,
     poolMax: Number(parsed.DB_POOL_MAX),
-    migrationDirectory: path.resolve(__dirname, '../../../', parsed.DB_MIGRATION_DIRECTORY),
+    migrationDirectory: path.resolve(process.env.PWD || process.cwd(), parsed.DB_MIGRATION_DIRECTORY),
     migrationExtension: parsed.DB_MIGRATION_EXTENSION,
   },
   jwt: {
@@ -88,7 +84,7 @@ export const env = {
     password: parsed.REDIS_PASSWORD,
   },
   cors: {
-    origins: parsed.CORS_ORIGINS.split(','),
+    origins: parsed.CORS_ORIGINS.split(',').map((url) => url.trim()),
   },
   mailjet: {
     mailjetApiKey: parsed.MAILJET_API_KEY,

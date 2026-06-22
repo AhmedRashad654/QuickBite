@@ -1,3 +1,4 @@
+import { formatPrice } from "@/lib/format-price";
 import type { CartItem } from "@/store/cart-store";
 
 type CheckoutItemRowProps = {
@@ -5,21 +6,13 @@ type CheckoutItemRowProps = {
   currency: string;
 };
 
-const formatPrice = (price: number, currency: string) => {
-  const formatted = (price / 100).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-  return `${formatted} ${currency}`;
-};
-
 const CheckoutItemRow = ({ item, currency }: CheckoutItemRowProps) => {
   return (
     <div className="flex items-center gap-3 rounded-lg border p-3">
       <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
-        {item.imageUrl ? (
+        {item.image_url ? (
           <img
-            src={item.imageUrl}
+            src={item.image_url}
             alt=""
             className="h-full w-full object-cover"
           />
