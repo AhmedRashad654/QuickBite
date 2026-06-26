@@ -64,6 +64,7 @@ export interface CreateOrderInput {
   delivery_fee: number;
   service_fee: number;
   total: number;
+  commission: number;
   currency: Currency;
   payment_method: PaymentMethod;
 }

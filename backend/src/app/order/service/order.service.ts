@@ -61,6 +61,7 @@ export class OrderService {
     const products = await getProductsByBranchAndIds(body.branch_id, productIds);
     const orderLineDrafts = this.buildOrderLineDrafts(body.items, products);
     const subtotal = sumMinor(orderLineDrafts.map((l) => l.line_total));
+    const commissionAmount = Math.floor((subtotal * Number(branch.commission)) / 10000);
     const total =
       body.order_type === OrderType.DELIVERY
         ? subtotal + branch.delivery_fee + SERVICE_FEE_MINOR
@@ -96,9 +97,10 @@ export class OrderService {
           status: body.payment_method === PaymentMethod.ONLINE ? OrderStatus.PENDING_PAYMENT : OrderStatus.PLACED,
           order_type: body.order_type,
           subtotal,
-          delivery_fee: address ? branch.delivery_fee / 100 : 0,
-          service_fee: SERVICE_FEE_MINOR / 100,
+          delivery_fee: address ? branch.delivery_fee : 0,
+          service_fee: SERVICE_FEE_MINOR,
           total,
+          commission: commissionAmount,
           payment_method: body.payment_method,
         },
         trx,
@@ -152,7 +154,7 @@ export class OrderService {
   async listCustomerOrders(actor: Partial<JwtPayloadType>, year: number, pagination: PaginationParams) {
     const yearStart = new Date(Date.UTC(year, 0, 1));
     const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
-    console.log(pagination)
+    console.log(pagination);
     const result = await findOrdersByCustomer({ customerId: actor.userId!, yearStart, yearEnd }, pagination);
     console.log(result, 'result 654');
     const counts = await countItemsByOrderIds(result.data.map((o) => o.id));

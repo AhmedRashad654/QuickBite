@@ -151,11 +151,10 @@ export const useCartStore = create<CartState>()(
       },
 
       getSubTotal: () => {
-        const totalInMinorUnit = get().items.reduce(
+        return get().items.reduce(
           (sum, item) => sum + item.price * item.quantity,
           0,
         );
-        return totalInMinorUnit / 100;
       },
 
       clearCart: () =>

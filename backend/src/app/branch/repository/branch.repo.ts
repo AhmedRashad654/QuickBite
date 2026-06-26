@@ -198,6 +198,7 @@ export async function findBranchWithRestaurant(
       'b.is_active',
       'b.accept_orders',
       'b.delivery_fee',
+      'b.commission',
       'b.country_code',
       'b.currency',
       'b.opens_at',

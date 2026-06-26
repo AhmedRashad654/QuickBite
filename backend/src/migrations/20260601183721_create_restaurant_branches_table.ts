@@ -1,5 +1,8 @@
 import type { Knex } from 'knex';
 
+// using minor unit for delivery_fee, commission
+// commision using percentage % 
+
 export async function up(knex: Knex): Promise<void> {
   await knex.raw(`
         CREATE EXTENSION IF NOT EXISTS postgis;

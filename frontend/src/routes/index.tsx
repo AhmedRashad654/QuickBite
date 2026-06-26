@@ -1,5 +1,7 @@
 import AppLayout from "@/layouts/AppLayout";
 import AuthLayout from "@/layouts/AuthLayout";
+import DeliveryLayout from "@/layouts/DeliveryLayout";
+import RestaurantLayout from "@/layouts/RestaurantLayout";
 import { lazy } from "react";
 import {
   createBrowserRouter,
@@ -7,6 +9,7 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { GuestRoute, ProtectedRoute } from "./guards";
+import { SYSTEM_ROLES } from "@/features/auth/types";
 
 const SignUp = lazy(() => import("@/features/auth/pages/SignUp"));
 const SignIn = lazy(() => import("@/features/auth/pages/SignIn"));
@@ -22,6 +25,8 @@ const OrdersPage = lazy(() => import("@/features/orders/pages/OrdersPage"));
 const OrderDetailPage = lazy(
   () => import("@/features/orders/pages/OrderDetailPage"),
 );
+const Delivery = lazy(() => import("@/features/delivery/pages/Delivery"));
+const Restaurant = lazy(() => import("@/features/restaurant/pages/Restaurant"));
 
 const Routes = () => {
   const AuthRoutes = [
@@ -60,7 +65,7 @@ const Routes = () => {
 
   const CustomerRoutes = [
     {
-      element: <ProtectedRoute />,
+      element: <ProtectedRoute allowedRoles={SYSTEM_ROLES.CUSTOMER} />,
       children: [
         {
           element: <AppLayout />,
@@ -76,6 +81,33 @@ const Routes = () => {
       ],
     },
   ];
+
+  const DeliveryRoutes = [
+    {
+      path: "/delivery",
+      element: <ProtectedRoute allowedRoles={SYSTEM_ROLES.DELIVERY_AGENT} />,
+      children: [
+        {
+          element: <DeliveryLayout />,
+          children: [{ path: "", element: <Delivery /> }],
+        },
+      ],
+    },
+  ];
+
+  const RestaurantRoutes = [
+    {
+      path: "/restaurant",
+      element: <ProtectedRoute allowedRoles={SYSTEM_ROLES.RESTAURANT_USER} />,
+      children: [
+        {
+          element: <RestaurantLayout />,
+          children: [{ path: "", element: <Restaurant /> }],
+        },
+      ],
+    },
+  ];
+
   const errorRoute = {
     path: "*",
     element: <div>not found</div>,
@@ -84,6 +116,8 @@ const Routes = () => {
   const router = createBrowserRouter([
     ...AuthRoutes,
     ...CustomerRoutes,
+    ...DeliveryRoutes,
+    ...RestaurantRoutes,
     errorRoute,
   ]);
 

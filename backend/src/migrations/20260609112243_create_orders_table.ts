@@ -1,5 +1,9 @@
 import type { Knex } from 'knex';
 
+// using minor unit for subtotal, delivery_fee, service_fee, total, commission
+// commission stored as an amount (Minor Unit), NOT a percentage.
+// Calculated as: (branch_commission_percentage / 10000) * subtotal
+
 export async function up(knex: Knex): Promise<void> {
   await knex.raw(`CREATE SEQUENCE IF NOT EXISTS orders_id_seq AS INTEGER`);
 

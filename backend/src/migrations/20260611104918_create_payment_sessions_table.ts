@@ -1,5 +1,7 @@
 import type {Knex} from "knex";
 
+// using minor unit for amount
+
 export async function up(knex: Knex): Promise<void> {
     await knex.raw(`
         CREATE TABLE payment_sessions (

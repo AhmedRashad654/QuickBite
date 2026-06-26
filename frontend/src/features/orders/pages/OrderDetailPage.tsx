@@ -116,13 +116,13 @@ const OrderDetailPage = () => {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Delivery fee</span>
                 <span className="tabular-nums">
-                   {`${order.delivery_fee} ${order.currency}`}
+                  {formatPrice(order.delivery_fee, order.currency)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Service fee</span>
                 <span className="tabular-nums">
-                  {`${order.service_fee} ${order.currency}`}
+                  {formatPrice(order.service_fee, order.currency)}
                 </span>
               </div>
               <Separator />
