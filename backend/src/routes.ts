@@ -12,6 +12,7 @@ import { assignmentRouter } from './app/assignment/routes.js';
 import { agentRouter } from './app/agent/routes.js';
 import { paymentRouter } from './app/payment/routes.js';
 import { orderRouter } from './app/order/routes.js';
+import { s3Router } from './app/s3/routes.js';
 
 export const routes = Router();
 
@@ -28,3 +29,4 @@ routes.use('/payments', paymentRouter);
 routes.use('/agents', agentRouter);
 routes.use('/assignment', assignmentRouter);
 routes.use('/finance', financeRouter);
+routes.use('/s3', s3Router);

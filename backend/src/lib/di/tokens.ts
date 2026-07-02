@@ -16,6 +16,7 @@ export const TOKENS = {
   SettlementService: Symbol.for('SettlementService'),
   FinanceService: Symbol.for('FinanceService'),
   AgentService: Symbol.for('AgentService'),
+  S3Service: Symbol.for('S3Service'),
 
   // Controller
   AuthController: Symbol.for('AuthController'),
@@ -30,6 +31,7 @@ export const TOKENS = {
   AssignmentController: Symbol.for('AssignmentController'),
   FinanceController: Symbol.for('FinanceController'),
   AgentController: Symbol.for('AgentController'),
+  S3Controller: Symbol.for('S3Controller'),
 
   // Lib/infra/
   Logger: Symbol.for('Logger'),

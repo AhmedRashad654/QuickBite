@@ -58,6 +58,12 @@ const schema = z.object({
   PRESENCE_STALE_SEC: z.string(),
   ASSIGNMENT_CLAIM_TTL_SEC: z.string(),
   AGENT_EARNING_SHARE_BPS: z.string(),
+
+  // s3 aws
+  AWS_ACCESS_KEY_ID: z.string(),
+  AWS_SECRET_ACCESS_KEY: z.string(),
+  AWS_REGION: z.string(),
+  AWS_S3_BUCKET_NAME: z.string(),
 });
 
 const parsed = schema.parse(process.env);
@@ -120,5 +126,12 @@ export const env = {
     presenceStaleSec: Number(parsed.PRESENCE_STALE_SEC),
     claimTtlSec: Number(parsed.ASSIGNMENT_CLAIM_TTL_SEC),
     agentEarningShareBps: Number(parsed.AGENT_EARNING_SHARE_BPS),
+  },
+
+  s3: {
+    awsAccessKeyId: parsed.AWS_ACCESS_KEY_ID,
+    awsSecretAccessKey: parsed.AWS_SECRET_ACCESS_KEY,
+    awsRegion: parsed.AWS_REGION,
+    awsS3BucketName: parsed.AWS_S3_BUCKET_NAME,
   },
 };

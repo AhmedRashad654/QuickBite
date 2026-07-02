@@ -39,6 +39,8 @@ import { AgentService } from '../../app/agent/service/agent.service.js';
 import { AgentController } from '../../app/agent/controller/agent.controller.js';
 import { IEmailProvider } from '../email/email.interface.js';
 import { IPaymentProvider } from '../payments/kashier/types.js';
+import { S3Service } from '../../app/s3/service/s3.service.js';
+import { S3Controller } from '../../app/s3/controller/s3.controller.js';
 
 // Infrastructure
 container.registerSingleton<Logger>(TOKENS.Logger, Logger);
@@ -63,6 +65,7 @@ container.registerSingleton<PresenceService>(TOKENS.PresenceService, PresenceSer
 container.registerSingleton<SettlementService>(TOKENS.SettlementService, SettlementService);
 container.registerSingleton<FinanceService>(TOKENS.FinanceService, FinanceService);
 container.registerSingleton<AgentService>(TOKENS.AgentService, AgentService);
+container.registerSingleton<S3Service>(TOKENS.S3Service, S3Service);
 
 // Controller
 container.registerSingleton<AuthController>(TOKENS.AuthController, AuthController);
@@ -77,5 +80,6 @@ container.registerSingleton<WebhookController>(TOKENS.WebhookController, Webhook
 container.registerSingleton<AssignmentController>(TOKENS.AssignmentController, AssignmentController);
 container.registerSingleton<FinanceController>(TOKENS.FinanceController, FinanceController);
 container.registerSingleton<AgentController>(TOKENS.AgentController, AgentController);
+container.registerSingleton<S3Controller>(TOKENS.S3Controller, S3Controller);
 
 export { container };

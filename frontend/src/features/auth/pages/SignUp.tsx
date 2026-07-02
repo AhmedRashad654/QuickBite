@@ -35,7 +35,7 @@ const SignUp = () => {
       role: SYSTEM_ROLES.CUSTOMER,
       restaurantName: "",
       restaurantCountry: COUNTRY.EG,
-      restaurantLogoUrl: "",
+      restaurantLogoUrl: import.meta.env.VITE_PLACEHOLDER_IMAGE_RESTAURANT,
     },
   });
   const selectedRole = useWatch({ control: form.control, name: "role" });
@@ -232,7 +232,9 @@ const SignUp = () => {
                 name="restaurantCountry"
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="primary-counrty">Primary Country</FieldLabel>
+                    <FieldLabel htmlFor="primary-counrty">
+                      Primary Country
+                    </FieldLabel>
                     <Select
                       name={field.name}
                       onValueChange={field.onChange}
@@ -251,29 +253,6 @@ const SignUp = () => {
                         <SelectItem value={COUNTRY.SA}>SA</SelectItem>
                       </SelectContent>
                     </Select>
-                    {fieldState.invalid ? (
-                      <FieldError errors={[fieldState.error]} />
-                    ) : null}
-                  </Field>
-                )}
-              />
-
-              <Controller
-                control={form.control}
-                name="restaurantLogoUrl"
-                render={({ field, fieldState }) => (
-                  <Field
-                    className="sm:col-span-2"
-                    data-invalid={fieldState.invalid}
-                  >
-                    <FieldLabel htmlFor="sign-up-restaurant-logo">
-                      Logo URL
-                    </FieldLabel>
-                    <Input
-                      {...field}
-                      id="sign-up-restaurant-logo"
-                      aria-invalid={fieldState.invalid}
-                    />
                     {fieldState.invalid ? (
                       <FieldError errors={[fieldState.error]} />
                     ) : null}

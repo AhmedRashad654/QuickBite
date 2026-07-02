@@ -42,20 +42,20 @@ export function idempotency(options: IdempotencyOptions = {}) {
 
         if (cachedValue) {
           const { status, body } = JSON.parse(cachedValue);
-          return res.status(status).json(body); 
+          return res.status(status).json(body);
         }
       }
+      
+      const originalSend = res.send.bind(res);
 
-      const originalJson = res.json.bind(res);
-
-      res.json = (body: any) => {
-        const cacheData = {
-          status: res.statusCode,
-          body: body,
-        };
-
-        cacheProvider.set(key, JSON.stringify(cacheData), ttlSeconds);
-        return originalJson(body);
+      res.send = (body: any) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          const cacheData = { status: res.statusCode, body: JSON.parse(body) };
+          cacheProvider.set(key, JSON.stringify(cacheData), ttlSeconds).catch(console.error);
+        } else {
+          cacheProvider.del(key).catch(console.error);
+        }
+        return originalSend(body);
       };
 
       next();
