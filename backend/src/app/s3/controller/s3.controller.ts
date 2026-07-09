@@ -13,6 +13,6 @@ export class S3Controller {
   getPresignedUrlController = async (req: Request, res: Response) => {
     const data = await validateBody(CreatePresignedUrl, req.body);
     const s3Data = await this.s3Service.generateUploadUrl(data);
-    sendSuccess(res, s3Data);
+    sendSuccess(res, s3Data, 'image upload successfully');
   };
 }

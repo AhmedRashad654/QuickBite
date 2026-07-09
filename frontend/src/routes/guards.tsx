@@ -34,12 +34,19 @@ export const ProtectedRoute = ({
 export const GuestRoute = () => {
   const isBootstrapped = useAuthStore((state) => state.isBootstrapped);
   const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
 
   if (!isBootstrapped) {
     return <FullPageLoader />;
   }
 
   if (accessToken) {
+    if (user?.system_role === SYSTEM_ROLES.RESTAURANT_USER) {
+      return <Navigate to="/restaurant" replace />;
+    }
+    if (user?.system_role === SYSTEM_ROLES.DELIVERY_AGENT) {
+      return <Navigate to="/delivery" replace />;
+    }
     return <Navigate to="/" replace />;
   }
 

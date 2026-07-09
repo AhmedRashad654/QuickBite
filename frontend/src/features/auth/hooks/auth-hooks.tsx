@@ -1,48 +1,46 @@
 import { useAuthStore } from "@/store/auth-store";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   forgotPassword,
-  getMe,
   login,
   logout,
   register,
   resetPassword,
 } from "../services/auth-api";
-import { useEffect } from "react";
 import { useIdempotency } from "@/hooks/useIdempotency";
-import type { ForgotPasswordPayload } from "../types";
+import { type ForgotPasswordPayload } from "../types";
 
 export const useLogin = () => {
-  const setSession = useAuthStore((state) => state.setSession);
-
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
   return useMutation({
     mutationFn: login,
     onSuccess: ({ data }) => {
-      setSession(data.accessToken, data.user);
+      setAccessToken(data.accessToken);
     },
   });
 };
 
 export const useRegister = () => {
-  const setSession = useAuthStore((state) => state.setSession);
-
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
   return useMutation({
     mutationFn: register,
     meta: { successMessage: "Account created" },
     onSuccess: ({ data }) => {
-      setSession(data.accessToken, data.user);
+      setAccessToken(data.accessToken);
     },
   });
 };
 
 export const useLogout = () => {
   const clearSession = useAuthStore((state) => state.clearSession);
+  const qC = useQueryClient();
 
   return useMutation({
     mutationFn: logout,
     meta: { successMessage: "Signed out" },
     onSettled: () => {
       clearSession();
+      qC.clear();
     },
   });
 };
@@ -62,22 +60,4 @@ export const useResetPassword = () => {
   return useMutation({
     mutationFn: resetPassword,
   });
-};
-
-export const useMe = (enabled = true) => {
-  const setUser = useAuthStore((state) => state.setUser);
-  const { data } = useQuery({
-    queryKey: ["auth", "me"],
-    queryFn: getMe,
-    enabled,
-    meta: { errorMessage: false },
-  });
-
-  useEffect(() => {
-    if (data) {
-      setUser(data.data);
-    }
-  }, [data, setUser]);
-
-  return data;
 };

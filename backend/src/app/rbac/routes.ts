@@ -1,7 +1,7 @@
 import {Router} from "express";
 import {container} from '../../lib/di/container.js'
 import { authenticate } from "../../lib/auth/guard.js";
-import { rbac, requireRestaurantMember } from "../../lib/auth/rbac.js";
+import { rbac, requireBranchAccess, requireRestaurantMember } from "../../lib/auth/rbac.js";
 import { TOKENS } from "../../lib/di/tokens.js";
 import { MemberController } from "./controller/member.controller.js";
 
@@ -18,11 +18,11 @@ rbacRouter.post('/restaurants/:restaurantId',
     memberController.createMember
 );
 
-rbacRouter.get('/restaurants/:restaurantId',
+rbacRouter.get('/branches/:branchId',
     authenticate,
-    requireRestaurantMember('restaurantId'),
+    requireBranchAccess('branchId'),
     rbac({resource:"core:member", action:'read'}),
-    memberController.listMembers
+    memberController.getMembersByBranchId
 );
 
 rbacRouter.patch('/restaurants/:restaurantId/member/:memberId',
@@ -37,11 +37,4 @@ rbacRouter.delete('/restaurants/:restaurantId/member/:memberId',
     requireRestaurantMember('restaurantId'),
     rbac({resource:"core:member", action:'delete'}),
     memberController.deleteMember
-);
-
-rbacRouter.put('/restaurants/:restaurantId/member/:memberId/branches',
-    authenticate,
-    requireRestaurantMember('restaurantId'),
-    rbac({resource:"core:member", action:'update'}),
-    memberController.updateMemberBranches
 );

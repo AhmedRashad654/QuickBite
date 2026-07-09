@@ -9,6 +9,7 @@ import BranchHeader from "../components/BranchHeader";
 import CartSheet from "../components/CartSheet";
 import CategorySection from "../components/CategorySection";
 import Loading from "@/components/shared/Loading";
+import { formatPrice } from "@/lib/format-price";
 
 const MenuPage = () => {
   const { branchId } = useParams<{ branchId: string }>();
@@ -86,7 +87,7 @@ const MenuPage = () => {
                 : branch.currency === "SAR"
                   ? "SR"
                   : ""}
-              {subTotal}
+              {formatPrice(subTotal, branch.currency)}
             </Badge>
           </Button>
         </div>

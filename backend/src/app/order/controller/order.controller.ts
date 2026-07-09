@@ -3,10 +3,10 @@ import { OrderService } from '../service/order.service.js';
 import { TOKENS } from '../../../lib/di/tokens.js';
 import { Request, Response } from 'express';
 import { validateBody } from '../../../lib/validation/validate.js';
-import { CreateOrderDTO } from '../dto/order.dto.js';
+import { CreateOrderDTO, UpdateOrderStatusDTO } from '../dto/order.dto.js';
 import { sendPaginated, sendSuccess } from '../../../lib/http/response.js';
 import { PaymentMethod } from '../enums.js';
-import { parsePaginationQuery } from '../../../lib/http/pagination/parse-query.js';
+import { parseFilters, parsePaginationQuery } from '../../../lib/http/pagination/parse-query.js';
 
 @injectable()
 export class OrderController {
@@ -39,5 +39,33 @@ export class OrderController {
       pagination,
     );
     sendPaginated(res, result.data, result.meta);
+  };
+
+  listRestaurantOrders = async (req: Request, res: Response) => {
+    const pagination = parsePaginationQuery(req.query as Record<string, unknown>, ['created_at', 'status', 'total']);
+    const filters = parseFilters(req.query, ['status', 'branch_id']);
+    const result = await this.orderService.listRestaurantOrders(
+      req.user!,
+      Number(req.params.restaurantId),
+      pagination,
+      filters,
+    );
+    sendPaginated(res, result.data, result.meta);
+  };
+
+  listBranchOrders = async (req: Request, res: Response) => {
+    const pagination = parsePaginationQuery(req.query as Record<string, unknown>, ['created_at', 'status', 'total']);
+    const filters = parseFilters(req.query, ['status', 'branch_id']);
+    const result = await this.orderService.listBranchOrders(Number(req.params.branchId), pagination, filters);
+    sendPaginated(res, result.data, result.meta);
+  };
+
+  updateOrderStatus = async (req: Request, res: Response) => {
+    const data = await validateBody(UpdateOrderStatusDTO, req.body);
+    const result = await this.orderService.updateOrderStatus(
+      req.order!,
+      data.status,
+    );
+    sendSuccess(res, result, 'Order status updated');
   };
 }

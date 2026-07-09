@@ -12,16 +12,10 @@ export class CreateMemberDTO {
 
   @IsString()
   @IsNotEmpty()
-  @IsOptional()
-  phone?: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @IsEnum(['Owner', 'branch_manager', 'staff'], )
+  @IsEnum(['Owner', 'branch_manager', 'staff'])
   role!: string;
 
   @IsArray()
-  @IsOptional()
   branchIds!: number[];
 }
 
@@ -34,6 +28,10 @@ export class UpdateMemberDTO {
   @IsOptional()
   @IsIn(['active', 'inactive', 'suspended'])
   status?: string;
+
+  @IsOptional()
+  @IsArray()
+  branchIds?: number[];
 }
 
 export class UpdateMemberBranchesDTO {

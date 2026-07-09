@@ -10,9 +10,11 @@ export interface Product {
   id: number;
   name: string;
   description?: string;
-  image_url?: string;
+  image_url?: string | null;
+  image_version:number;
   restaurant_id: number;
   category_id?: number;
+  category_name?: string;
   created_at: Date;
   updated_at: Date;
   deleted_at?: Date;

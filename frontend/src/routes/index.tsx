@@ -26,7 +26,27 @@ const OrderDetailPage = lazy(
   () => import("@/features/orders/pages/OrderDetailPage"),
 );
 const Delivery = lazy(() => import("@/features/delivery/pages/Delivery"));
-const Restaurant = lazy(() => import("@/features/restaurant/pages/Restaurant"));
+const RestaurantDashboard = lazy(
+  () => import("@/features/restaurant/pages/Restaurant"),
+);
+const RestaurantOrdersPage = lazy(
+  () => import("@/features/restaurant/pages/RestaurantOrdersPage"),
+);
+const RestaurantProductsPage = lazy(
+  () => import("@/features/restaurant/pages/RestaurantProductsPage"),
+);
+const RestaurantBranchesPage = lazy(
+  () => import("@/features/restaurant/pages/RestaurantBranchesPage"),
+);
+const RestaurantMembersPage = lazy(
+  () => import("@/features/restaurant/pages/RestaurantMembersPage"),
+);
+const RestaurantSettingsPage = lazy(
+  () => import("@/features/restaurant/pages/RestaurantSettingsPage"),
+);
+const RestaurantFinancePage = lazy(
+  () => import("@/features/restaurant/pages/RestaurantFinancePage"),
+);
 
 const Routes = () => {
   const AuthRoutes = [
@@ -102,7 +122,16 @@ const Routes = () => {
       children: [
         {
           element: <RestaurantLayout />,
-          children: [{ path: "", element: <Restaurant /> }],
+          children: [
+            { index: true, element: <RestaurantDashboard /> },
+            { path: "orders", element: <RestaurantOrdersPage /> },
+            { path: "orders/:publicId", element: <OrderDetailPage /> },
+            { path: "products", element: <RestaurantProductsPage /> },
+            { path: "branches", element: <RestaurantBranchesPage /> },
+            { path: "members", element: <RestaurantMembersPage /> },
+            { path: "settings", element: <RestaurantSettingsPage /> },
+            { path: "finance", element: <RestaurantFinancePage /> },
+          ],
         },
       ],
     },

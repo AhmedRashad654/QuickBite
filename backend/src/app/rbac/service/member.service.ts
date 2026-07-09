@@ -15,16 +15,19 @@ import {
   checkMemberExists,
   createRestaurantMember,
   deleteMember,
-  findMembersByRestaurantId,
   findMemberWithRoleName,
   updateMember,
 } from '../repository/restaurant_member.repo.js';
 import { findRoleByName } from '../repository/role.repo.js';
 import { RestaurantMember } from '../type.js';
 import { CreateMemberDTO, UpdateMemberBranchesDTO, UpdateMemberDTO } from '../dto/member.dto.js';
-import { countBranchesByIdsAndRestaurant, setMemberBranches } from '../repository/member-branch.repo.js';
+import {
+  countBranchesByIdsAndRestaurant,
+  findMembersByBranchId,
+  setMemberBranches,
+} from '../repository/member-branch.repo.js';
 import { db } from '../../../lib/knex/knex.js';
-import { findUserByEmail, findUserByEmailOrPhone } from '../../users/repository/users.repo.js';
+import { findUserByEmail } from '../../users/repository/users.repo.js';
 import { UserService } from '../../users/service/users.service.js';
 import { User } from '../../users/types.js';
 import { SystemRole } from '../../users/enums.js';
@@ -37,6 +40,7 @@ import { TOKENS } from '../../../lib/di/tokens.js';
 import { memberInvitationNew } from '../templates/member-invitation-new.js';
 import { MailjetEmailProvider } from '../../../lib/email/mailjet.js';
 import { memberInvitationExist } from '../templates/member-invitation-exist.js';
+import { env } from '../../../lib/config/env.js';
 
 @injectable()
 export class MemberService {
@@ -78,9 +82,7 @@ export class MemberService {
     await this.validateBranchOwnership(branchIds, restaurantId);
 
     let user: User | null = null;
-    if (data.email && data.phone) {
-      user = await findUserByEmailOrPhone(data.email, data.phone);
-    } else if (data.email) {
+    if (data.email) {
       user = await findUserByEmail(data.email);
     }
 
@@ -92,7 +94,7 @@ export class MemberService {
         user = await this.userService.create(
           {
             email: data.email,
-            phone: data.phone || '',
+            phone: null,
             name: data.name || '',
             password: '',
             system_role: SystemRole.RESTAURANT_USER,
@@ -111,7 +113,7 @@ export class MemberService {
           restaurant_id: restaurantId,
           user_id: user.id,
           role_id: roleId,
-          status: MemberStatus.INACTIVE,
+          status: MemberStatus.ACTIVE,
         },
         trx,
       );
@@ -135,7 +137,7 @@ export class MemberService {
           },
           trx,
         );
-        const { subject, html } = memberInvitationNew(otp, data.role);
+        const { subject, html } = memberInvitationNew(otp, data.role, `${env.frontendUrl}/auth/reset-password?email=${user.email}`);
         await this.emailProvider.send(data.email, subject, html);
       } else {
         const { subject, html } = memberInvitationExist(user.name || 'Team Member', data.role);
@@ -145,17 +147,13 @@ export class MemberService {
       await trx.commit();
 
       return {
-        message: 'Member invited successfully',
-        member: {
-          id: member.id,
-          user_id: user.id,
-          email: data.email,
-          name: data.name,
-          phone: data.phone,
-          role: data.role,
-          status: MemberStatus.INACTIVE,
-          branchIds,
-        },
+        id: member.id,
+        user_id: user.id,
+        email: data.email,
+        name: data.name,
+        role: data.role,
+        status: member.status,
+        branchIds,
       };
     } catch (err) {
       await trx.rollback();
@@ -163,9 +161,9 @@ export class MemberService {
     }
   }
 
-  async listMembers(restaurantId: number) {
-    const members = await findMembersByRestaurantId(restaurantId);
-    return { data: members };
+  async getMembersByBranchId(branchId: number) {
+    const members = await findMembersByBranchId(branchId);
+    return members;
   }
 
   async updateMember(restaurantId: number, memberId: number, data: UpdateMemberDTO) {
@@ -180,17 +178,22 @@ export class MemberService {
 
     const updateData: { role_id?: number; status?: string } = {};
     if (data.role) {
+      if (data.role === 'owner') throw CannotAssignTwoOwnerForRestaurant;
       const roleId = await findRoleByName(data.role);
       if (!roleId) throw RoleNotFoundError;
       updateData.role_id = roleId;
     }
     if (data.status) {
-      if (data.role === 'owner') throw CannotAssignTwoOwnerForRestaurant;
       updateData.status = data.status;
     }
 
     await updateMember(memberId, updateData);
-    return { message: 'Member updated successfully' };
+
+    if (data?.branchIds && data?.branchIds?.length > 0) {
+      await this.updateMemberBranches(restaurantId, memberId, {
+        branchIds: data.branchIds,
+      });
+    }
   }
 
   async deleteMember(restaurantId: number, memberId: number) {
@@ -202,7 +205,6 @@ export class MemberService {
       throw CannotDeleteOwnerError;
     }
     await deleteMember(memberId);
-    return { message: 'Member deleted successfully' };
   }
 
   async updateMemberBranches(restaurantId: number, memberId: number, data: UpdateMemberBranchesDTO) {

@@ -1,3 +1,9 @@
+import type {
+  MemberStatues,
+  RestaurantRole,
+  RestaurantStatues,
+} from "../restaurant/types";
+
 export const SYSTEM_ROLES = {
   CUSTOMER: "customer",
   DELIVERY_AGENT: "delivery_agent",
@@ -14,6 +20,16 @@ export type AuthUser = {
   system_role?: SystemRole;
   created_at?: string;
   updated_at?: string;
+  memberships: AuthMembership[];
+};
+
+export type AuthMembership = {
+  restaurantId: number;
+  restaurantName: string;
+  restaurantRole: RestaurantRole;
+  restaurantStatus: RestaurantStatues;
+  stautsMember: MemberStatues;
+  branchIds: number[];
 };
 
 export type RestaurantRegistration = {
@@ -55,6 +71,3 @@ export type AuthResponse = {
 export type RefreshResponse = {
   accessToken: string;
 };
-
-
-

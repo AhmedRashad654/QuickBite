@@ -14,7 +14,7 @@ export function parsePaginationQuery(query: Record<string, any>, allowedSortBy: 
     cursor: query.cursor as string,
     limit,
     sortBy,
-    sortOrder: query.sortOrder === 'desc' ? 'desc' : 'asc',
+    sortOrder: query.sortOrder === 'asc' ? 'asc' : 'desc',
   };
 }
 // filter

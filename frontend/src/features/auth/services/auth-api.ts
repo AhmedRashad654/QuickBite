@@ -33,7 +33,7 @@ export const register = async (payload: RegisterPayload) => {
 export const refreshToken = async () => {
   const response =
     await apiClient.post<ApiResponse<RefreshResponse>>("/auth/refresh");
-  return unwrap(response);
+  return unwrapResponse(response);
 };
 
 export const logout = async () => {
@@ -44,7 +44,7 @@ export const logout = async () => {
 
 export const getMe = async () => {
   const response = await apiClient.get<ApiResponse<AuthUser>>("/user/me");
-  return unwrap(response);
+  return unwrapResponse(response);
 };
 
 export const forgotPassword = async (

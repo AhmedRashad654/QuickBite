@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { loginSchema, type LoginFormValues } from "../schemas";
 import { useLogin } from "../hooks/auth-hooks";
+import { SYSTEM_ROLES } from "../types";
 
 const SignIn = () => {
   const navigate = useNavigate();
@@ -26,8 +27,15 @@ const SignIn = () => {
 
   const onSubmit = (values: LoginFormValues) => {
     loginMutation.mutate(values, {
-      onSuccess: () => {
-        navigate("/", { replace: true });
+      onSuccess: ({ data }) => {
+        const role = data.user?.system_role;
+        if (role === SYSTEM_ROLES.RESTAURANT_USER) {
+          navigate("/restaurant", { replace: true });
+        } else if (role === SYSTEM_ROLES.DELIVERY_AGENT) {
+          navigate("/delivery", { replace: true });
+        } else {
+          navigate("/", { replace: true });
+        }
       },
     });
   };

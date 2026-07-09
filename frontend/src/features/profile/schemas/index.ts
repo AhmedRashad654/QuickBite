@@ -12,7 +12,7 @@ export const addressFormSchema = z.object({
   label: z.string().min(1, "Label is required"),
   country: z.enum(["EG", "SA"], {
     message: "Please select a supported country",
-  }),
+  }).nullable(),
   city: z.string().min(1, "City is required"),
   street: z.string().min(1, "Street is required"),
   building: z.string().optional(),
@@ -25,11 +25,13 @@ export const addressFormSchema = z.object({
   lat: z.coerce
     .number()
     .min(-90)
-    .max(90, "Latitude must be between -90 and 90"),
+    .max(90, "Latitude must be between -90 and 90")
+    .nullable(),
   lng: z.coerce
     .number()
     .min(-180)
-    .max(180, "Longitude must be between -180 and 180"),
+    .max(180, "Longitude must be between -180 and 180")
+    .nullable(),
   is_default: z.boolean().optional(),
 });
 

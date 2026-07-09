@@ -62,8 +62,15 @@ const SignUp = () => {
     }
 
     registerMutation.mutate(payload, {
-      onSuccess: () => {
-        navigate("/", { replace: true });
+      onSuccess: ({ data }) => {
+        const role = data.user?.system_role;
+        if (role === SYSTEM_ROLES.RESTAURANT_USER) {
+          navigate("/restaurant", { replace: true });
+        } else if (role === SYSTEM_ROLES.DELIVERY_AGENT) {
+          navigate("/delivery", { replace: true });
+        } else {
+          navigate("/", { replace: true });
+        }
       },
     });
   };

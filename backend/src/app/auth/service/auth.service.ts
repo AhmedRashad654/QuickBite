@@ -2,17 +2,40 @@ import { inject, injectable } from 'tsyringe';
 import { NotAuthenticated } from '../../../lib/auth/error.js';
 import { db } from '../../../lib/knex/knex.js';
 import { findBranchIdsByMemberId } from '../../rbac/repository/member-branch.repo.js';
-import { findRestaurantsWithRole } from '../../rbac/repository/restaurant_member.repo.js';
-import { MemberService } from '../../rbac/service/member.service.js';
-import { RestaurantMembership } from '../../rbac/type.js';
+import {
+  findRestaurantsActiveWithRole,
+} from '../../rbac/repository/restaurant_member.repo.js';
+import { RestaurantMembership, ResultRestaurantsWithRole } from '../../rbac/type.js';
 import { RestaurantService } from '../../restaurant/service/restaurant.service.js';
 import { SystemRole } from '../../users/enums.js';
-import { findUserByEmail, findUserExistsByEmailOrPhone, updateUserPassword } from '../../users/repository/users.repo.js';
+import {
+  findUserByEmail,
+  findUserExistsByEmailOrPhone,
+  updateUserPassword,
+} from '../../users/repository/users.repo.js';
 import { UserService } from '../../users/service/users.service.js';
 import { ForgetPasswordDTO, LoginDTO, RegisterDTO, ResetPasswordDTO } from '../dto/auth.dto.js';
-import { CannotSignupAsSystemAdmin, IncorrectCredentials, InvalidOTPError, RestaurantDataRequiredError, UserAlreadyExistsError } from '../error.js';
-import { createPasswordReset, findLatestPasswordResetByUserId, updatePasswordResetConsumedAt } from '../repository/auth.repo.js';
-import { comparePassword, createAccessToken, createRefreshToken, generateOTP, hashOTP, hashPassword, verifyRefreshToken } from '../utils.js';
+import {
+  CannotSignupAsSystemAdmin,
+  IncorrectCredentials,
+  InvalidOTPError,
+  RestaurantDataRequiredError,
+  UserAlreadyExistsError,
+} from '../error.js';
+import {
+  createPasswordReset,
+  findLatestPasswordResetByUserId,
+  updatePasswordResetConsumedAt,
+} from '../repository/auth.repo.js';
+import {
+  comparePassword,
+  createAccessToken,
+  createRefreshToken,
+  generateOTP,
+  hashOTP,
+  hashPassword,
+  verifyRefreshToken,
+} from '../utils.js';
 import { TOKENS } from '../../../lib/di/tokens.js';
 import { passwordResetEmail } from '../templates/password-reset.js';
 import { MailjetEmailProvider } from '../../../lib/email/mailjet.js';
@@ -23,7 +46,6 @@ export class AuthService {
   constructor(
     @inject(TOKENS.RestaurantService) private readonly restaurantService: RestaurantService,
     @inject(TOKENS.UserService) private readonly userService: UserService,
-    @inject(TOKENS.MemberService) private readonly memberService: MemberService,
     @inject(TOKENS.EmailProvider) private readonly emailProvider: MailjetEmailProvider,
   ) {}
 
@@ -59,8 +81,10 @@ export class AuthService {
           throw RestaurantDataRequiredError;
         }
         restaurant = await this.restaurantService.create(user.id, data.restaurant, trx);
-
-        await this.memberService.createOwnerMember(restaurant.id, user.id, trx);
+        if (!restaurant) {
+          await trx.rollback();
+          return;
+        }
         membershipsInfo.push({
           restaurantId: restaurant.id,
           restaurantRole: 'owner',
@@ -80,8 +104,14 @@ export class AuthService {
       email: user.email,
       memberships: membershipsInfo,
     };
-    const accessToken = createAccessToken(payload);
-    const refreshToken = createRefreshToken(payload);
+
+    const accessToken = createAccessToken({
+      ...payload,
+      memberships: payload.memberships?.map(({ restaurantName: _, ...rest }) => rest),
+    });
+
+    const { memberships: _, ...refreshTokenPayload } = payload;
+    const refreshToken = createRefreshToken(refreshTokenPayload);
 
     return {
       accessToken,
@@ -93,6 +123,7 @@ export class AuthService {
         phone: user.phone,
         system_role: user.system_role,
         created_at: user.created_at,
+        memberships: membershipsInfo,
       },
       restaurant,
     };
@@ -112,9 +143,9 @@ export class AuthService {
 
     let membershipsInfo: RestaurantMembership[] = [];
     if (user.system_role == SystemRole.RESTAURANT_USER) {
-      const rows = await findRestaurantsWithRole(user.id);
+      const rows = await findRestaurantsActiveWithRole(user.id);
       membershipsInfo = await Promise.all(
-        rows.map(async (row: { restaurant_id: number; member_id: number; role_name: string }) => {
+        rows.map(async (row: ResultRestaurantsWithRole) => {
           const branchIds = await findBranchIdsByMemberId(row.member_id);
           return {
             restaurantId: row.restaurant_id,
@@ -131,8 +162,14 @@ export class AuthService {
       email: user.email,
       memberships: membershipsInfo,
     };
-    const accessToken = createAccessToken(payload);
-    const refreshToken = createRefreshToken(payload);
+
+    const accessToken = createAccessToken({
+      ...payload,
+      memberships: payload.memberships?.map(({ restaurantName: _, ...rest }) => rest),
+    });
+
+    const { memberships: _, ...refreshTokenPayload } = payload;
+    const refreshToken = createRefreshToken(refreshTokenPayload);
 
     return {
       accessToken,
@@ -144,6 +181,7 @@ export class AuthService {
         phone: user.phone,
         system_role: user.system_role,
         created_at: user.created_at,
+        memberships: membershipsInfo,
       },
     };
   };
@@ -173,17 +211,19 @@ export class AuthService {
   resetPassword = async (data: ResetPasswordDTO) => {
     // find user
     const user = await findUserByEmail(data.email);
+    console.log(user, 'yy');
     if (!user) {
       throw InvalidOTPError;
     }
     // find reset password
     const reset = await findLatestPasswordResetByUserId(user.id);
+    console.log(reset, 'reset 7');
     if (!reset) {
       throw InvalidOTPError;
     }
     // verify otp and expiry date
     const inputOTPHash = hashOTP(data.otp);
-
+    console.log(inputOTPHash, 'input hash otp');
     if (inputOTPHash != reset.otp_hash || reset.expires_at < new Date()) {
       throw InvalidOTPError;
     }
@@ -202,23 +242,26 @@ export class AuthService {
 
     let membershipsInfo: RestaurantMembership[] = [];
     if (payload.role == SystemRole.RESTAURANT_USER) {
-      const rows = await findRestaurantsWithRole(payload.userId);
+      const rows = await findRestaurantsActiveWithRole(payload.userId);
       membershipsInfo = await Promise.all(
-        rows.map(async (row: { restaurant_id: number; member_id: number; role_name: string }) => {
-          const branchIds = await findBranchIdsByMemberId(row.member_id);
-          return {
-            restaurantId: row.restaurant_id,
-            restaurantRole: row.role_name,
-            branchIds: branchIds,
-          };
-        }),
+        rows.map(
+          async (row: ResultRestaurantsWithRole) => {
+            const branchIds = await findBranchIdsByMemberId(row.member_id);
+            return {
+              restaurantId: row.restaurant_id,
+              restaurantRole: row.role_name,
+              branchIds: branchIds,
+            };
+          },
+        ),
       );
     }
+
     const accessToken = createAccessToken({
       userId: payload.userId,
       role: payload.role,
       email: payload.email,
-      memberships: membershipsInfo,
+      memberships: membershipsInfo?.map(({ restaurantName: _, ...rest }) => rest),
     });
     return { accessToken };
   };

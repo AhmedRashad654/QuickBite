@@ -1,3 +1,18 @@
+export const ORDER_STATUES = {
+  PENDING_PAYMENT: "pending_payment",
+  PLACED: "placed",
+  ACCEPTED: "accepted",
+  REJECTED: "rejected",
+  PREPARING: "preparing",
+  READY: "ready",
+  ASSIGNED: "assigned",
+  PICKED: "picked",
+  DELIVERED: "delivered",
+  CANCELLED: "cancelled",
+} as const;
+
+export type OrderStatues = (typeof ORDER_STATUES)[keyof typeof ORDER_STATUES];
+
 export interface OrderSummary {
   public_id: string;
   status: string;

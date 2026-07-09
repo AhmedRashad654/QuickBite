@@ -39,12 +39,15 @@ export const useCurrentLocation = () => {
           lng: position.coords.longitude,
           label: "Current location",
           source: "browser",
-          idCustomerAddress:null,
-          countryCode:null
+          idCustomerAddress: null,
+          countryCode: null,
         });
         setPermissionStatus("granted");
       },
       () => {
+        toast.warning(
+          "You have blocked access to this site. To enable it, click on the lock icon 🔒 next to the URL at the top of the browser, go to Location -> Allow, and then refresh the page.",
+        );
         setPermissionStatus("denied");
       },
       {

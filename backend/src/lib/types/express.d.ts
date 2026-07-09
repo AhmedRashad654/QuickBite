@@ -17,5 +17,6 @@ declare namespace Express {
       restaurantRole: string;
       branchIds: number[];
     };
+    order?: any;
   }
 }

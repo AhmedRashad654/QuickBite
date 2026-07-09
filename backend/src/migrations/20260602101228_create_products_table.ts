@@ -19,6 +19,7 @@ export async function up(knex: Knex): Promise<void> {
             name TEXT NOT NULL,
             description TEXT,
             image_url TEXT,
+            image_version INT NOT NULL DEFAULT 0
             restaurant_id INTEGER NOT NULL,
             category_id INTEGER,
             created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

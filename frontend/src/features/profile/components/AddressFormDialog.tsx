@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus, Save } from "lucide-react";
 import { Controller, useForm, type Resolver } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +16,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { AddressInput } from "@/components/ui/address-input";
+import CurrentLocationInput from "@/components/ui/current-location-input";
 import {
   Select,
   SelectContent,
@@ -29,7 +31,7 @@ import {
   useUpdateAddress,
 } from "../hooks/customer-address-hooks";
 import { ADDRESS_TYPE, type CustomerAddress } from "../types";
-import { COUNTRY } from "@/types";
+import { COUNTRY, type Country } from "@/types";
 
 type AddressFormDialogProps = {
   open: boolean;
@@ -40,14 +42,14 @@ type AddressFormDialogProps = {
 
 const DEFAULT_VALUES: AddressFormValues = {
   label: "",
-  country: "EG",
+  country: null,
   city: "",
   street: "",
   building: "",
   apartment_number: "",
   type: ADDRESS_TYPE.HOME,
-  lat: 0,
-  lng: 0,
+  lat: null,
+  lng: null,
   is_default: false,
 };
 
@@ -72,14 +74,14 @@ export const AddressFormDialog = ({
         isEdit && address
           ? {
               label: address.label ?? "",
-              country: address.country ?? "EG",
+              country: address.country ?? COUNTRY.EG,
               city: address.city ?? "",
               street: address.street ?? "",
               building: address.building ?? "",
               apartment_number: address.apartment_number ?? "",
               type: address.type ?? ADDRESS_TYPE.HOME,
-              lat: address.lat ?? 0,
-              lng: address.lng ?? 0,
+              lat: address.lat ?? null,
+              lng: address.lng ?? null,
               is_default: address.is_default ?? false,
             }
           : DEFAULT_VALUES,
@@ -88,6 +90,19 @@ export const AddressFormDialog = ({
   }, [open, isEdit, address, form]);
 
   const onSubmit = (values: AddressFormValues) => {
+    if (!values.lat || !values.lng) {
+      form.setError("lat", {
+        message: "Please select a location using Current Location or search",
+      });
+      form.setError("lng", {
+        message: "Please select a location using Current Location or search",
+      });
+      form.setError("country", {
+        message: "Please select a location using Current Location or search",
+      });
+      return;
+    }
+
     if (isEdit && address) {
       updateMutation.mutate(
         { ...values, addressId: address.id },
@@ -101,6 +116,9 @@ export const AddressFormDialog = ({
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;
+  const [typeLocation, setTypeLoaction] = useState<
+    "currentLocation" | "specificLocation"
+  >("specificLocation");
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -130,58 +148,121 @@ export const AddressFormDialog = ({
               )}
             />
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Controller
-                control={form.control}
-                name="country"
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="addr-country">Country</FieldLabel>
-                    <Select
-                      name={field.name}
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
-                      <SelectTrigger
-                        id="addr-country"
-                        className="w-full"
-                        onBlur={field.onBlur}
-                        aria-invalid={fieldState.invalid}
-                      >
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={COUNTRY.EG}>Egypt</SelectItem>
-                        <SelectItem value={COUNTRY.SA}>
-                          Saudi Arabia
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {fieldState.invalid ? (
-                      <FieldError errors={[fieldState.error]} />
-                    ) : null}
-                  </Field>
-                )}
-              />
+            <Field className="col-span-2">
+              <FieldLabel>Type Location</FieldLabel>
+              <Select
+                value={typeLocation}
+                onValueChange={(
+                  value: "currentLocation" | "specificLocation",
+                ) => {
+                  setTypeLoaction(value);
+                  form.resetField("lat");
+                  form.resetField("lng");
+                  form.resetField("country");
+                  form.resetField("city");
+                  form.resetField("street");
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={"currentLocation"}>
+                    Current Location
+                  </SelectItem>
+                  <SelectItem value={"specificLocation"}>
+                    Specific Location
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
 
-              <Controller
-                control={form.control}
-                name="city"
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="addr-city">City</FieldLabel>
-                    <Input
-                      {...field}
-                      id="addr-city"
-                      aria-invalid={fieldState.invalid}
-                    />
-                    {fieldState.invalid ? (
-                      <FieldError errors={[fieldState.error]} />
-                    ) : null}
-                  </Field>
-                )}
-              />
-            </div>
+            {typeLocation === "specificLocation" ? (
+              <Field className="col-span-2">
+                <FieldLabel htmlFor="addr-search">Find address</FieldLabel>
+                <AddressInput
+                  value=""
+                  onSelect={(result) => {
+                    form.setValue("lat", result.lat, {
+                      shouldValidate: true,
+                    });
+                    form.setValue("lng", result.lng, {
+                      shouldValidate: true,
+                    });
+                    form.setValue(
+                      "country",
+                      (result.countryCode?.toLocaleUpperCase() as Country) ||
+                        COUNTRY.EG,
+                      {
+                        shouldValidate: true,
+                      },
+                    );
+                    if (result.city) {
+                      form.setValue("city", result.city, {
+                        shouldValidate: true,
+                      });
+                    }
+                    if (result.street) {
+                      form.setValue("street", result.street, {
+                        shouldValidate: true,
+                      });
+                    }
+                  }}
+                  placeholder="Search for your address..."
+                />
+              </Field>
+            ) : (
+              <Field className="col-span-2">
+                <FieldLabel>Address</FieldLabel>
+                <CurrentLocationInput
+                  onSelect={(result) => {
+                    form.setValue("lat", result.lat, {
+                      shouldValidate: true,
+                    });
+                    form.setValue("lng", result.lng, {
+                      shouldValidate: true,
+                    });
+                    form.setValue(
+                      "country",
+                      (result.countryCode?.toLocaleUpperCase() as Country) ||
+                        COUNTRY.EG,
+                      {
+                        shouldValidate: true,
+                      },
+                    );
+                    if (result.city) {
+                      form.setValue("city", result.city, {
+                        shouldValidate: true,
+                      });
+                    }
+                    if (result.street) {
+                      form.setValue("street", result.street, {
+                        shouldValidate: true,
+                      });
+                    }
+                  }}
+                />
+              </Field>
+            )}
+
+            <Controller
+              control={form.control}
+              name="city"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid} className="col-span-2">
+                  <FieldLabel htmlFor="addr-city">City</FieldLabel>
+                  <Input
+                    {...field}
+                    placeholder="City"
+                    id="addr-city"
+                    aria-invalid={fieldState.invalid}
+                  />
+                  {fieldState.invalid ? (
+                    <FieldError errors={[fieldState.error]} />
+                  ) : null}
+                </Field>
+              )}
+            />
 
             <Controller
               control={form.control}
@@ -191,6 +272,7 @@ export const AddressFormDialog = ({
                   <FieldLabel htmlFor="addr-street">Street</FieldLabel>
                   <Input
                     {...field}
+                    placeholder="Street"
                     id="addr-street"
                     aria-invalid={fieldState.invalid}
                   />
@@ -200,6 +282,71 @@ export const AddressFormDialog = ({
                 </Field>
               )}
             />
+
+            <Controller
+              control={form.control}
+              name="country"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid} className="col-span-2">
+                  <FieldLabel htmlFor="addr-country">Country</FieldLabel>
+                  <Input
+                    {...field}
+                    value={field.value ?? ""}
+                    id="addr-country"
+                    aria-invalid={fieldState.invalid}
+                    placeholder="Country"
+                    readOnly
+                  />
+                  {fieldState.invalid ? (
+                    <FieldError errors={[fieldState.error]} />
+                  ) : null}
+                </Field>
+              )}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Controller
+                control={form.control}
+                name="lat"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="addr-lat">Latitude</FieldLabel>
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      id="addr-lat"
+                      placeholder="Latitude"
+                      aria-invalid={fieldState.invalid}
+                      readOnly
+                    />
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
+                  </Field>
+                )}
+              />
+
+              <Controller
+                control={form.control}
+                name="lng"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor="addr-lng">Longitude</FieldLabel>
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      id="addr-lng"
+                      placeholder="Longitude"
+                      aria-invalid={fieldState.invalid}
+                      readOnly
+                    />
+                    {fieldState.invalid ? (
+                      <FieldError errors={[fieldState.error]} />
+                    ) : null}
+                  </Field>
+                )}
+              />
+            </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Controller
@@ -302,64 +449,6 @@ export const AddressFormDialog = ({
                         <SelectItem value="true">Yes</SelectItem>
                       </SelectContent>
                     </Select>
-                    {fieldState.invalid ? (
-                      <FieldError errors={[fieldState.error]} />
-                    ) : null}
-                  </Field>
-                )}
-              />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Controller
-                control={form.control}
-                name="lat"
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="addr-lat">Latitude</FieldLabel>
-                    <Input
-                      id="addr-lat"
-                      type="number"
-                      step="any"
-                      value={field.value}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === "" ? "" : Number(e.target.value),
-                        )
-                      }
-                      onBlur={field.onBlur}
-                      ref={field.ref}
-                      name={field.name}
-                      aria-invalid={fieldState.invalid}
-                    />
-                    {fieldState.invalid ? (
-                      <FieldError errors={[fieldState.error]} />
-                    ) : null}
-                  </Field>
-                )}
-              />
-
-              <Controller
-                control={form.control}
-                name="lng"
-                render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor="addr-lng">Longitude</FieldLabel>
-                    <Input
-                      id="addr-lng"
-                      type="number"
-                      step="any"
-                      value={field.value}
-                      onChange={(e) =>
-                        field.onChange(
-                          e.target.value === "" ? "" : Number(e.target.value),
-                        )
-                      }
-                      onBlur={field.onBlur}
-                      ref={field.ref}
-                      name={field.name}
-                      aria-invalid={fieldState.invalid}
-                    />
                     {fieldState.invalid ? (
                       <FieldError errors={[fieldState.error]} />
                     ) : null}

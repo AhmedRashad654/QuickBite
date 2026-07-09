@@ -2,7 +2,12 @@ import { inject, injectable } from 'tsyringe';
 import { JwtPayloadType } from '../../../lib/types/jwtPayload.js';
 import { CreateOrderDTO } from '../dto/order.dto.js';
 import { RestaurantStatus } from '../../restaurant/enums.js';
-import { BranchNotAcceptingOrdersError, OrderNotFoundError, outOfStockError } from '../errors.js';
+import {
+  BranchNotAcceptingOrdersError,
+  OrderNotFoundError,
+  invalidStatusTransitionError,
+  outOfStockError,
+} from '../errors.js';
 import { findAddressById } from '../../customer_address/repository/customer-address.repo.js';
 import { findBranchWithRestaurant } from '../../branch/repository/branch.repo.js';
 import { BranchNotFoundError } from '../../branch/errors.js';
@@ -16,11 +21,23 @@ import { BranchProduct, Order, OrderItem, OrderLineDraft, UnavailableItem } from
 import { multiplyMinor, sumMinor } from '../../../lib/utils/money.js';
 import { randomUUID } from 'crypto';
 import { db } from '../../../lib/knex/knex.js';
-import { createOrder, findOrderByPublicId, findOrdersByCustomer, updateOrderStatus } from '../repository/order.repo.js';
+import {
+  createOrder,
+  findOrderByPublicId,
+  findOrdersByBranch,
+  findOrdersByCustomer,
+  findOrdersByRestaurant,
+  updateOrderStatus,
+} from '../repository/order.repo.js';
 import { OrderStatus, OrderType, PaymentMethod } from '../enums.js';
 import { CustomerAddress } from '../../customer_address/type.js';
 import { bulkInsertItems, countItemsByOrderIds, findItemsByOrderIds } from '../repository/order-item.repo.js';
-import { OrderDetailResponseDTO, OrderResponseDTO, OrderSummaryResponseDTO } from '../dto/order.response.dto.js';
+import {
+  OrderDetailResponseDTO,
+  OrderResponseDTO,
+  OrderStatusResponseDTO,
+  OrderSummaryResponseDTO,
+} from '../dto/order.response.dto.js';
 import { Server as IoServer } from 'socket.io';
 import { container } from '../../../lib/di/container.js';
 import { TOKENS } from '../../../lib/di/tokens.js';
@@ -28,7 +45,7 @@ import { PaymentService } from '../../payment/service/payment.service.js';
 import { AppError } from '../../../lib/error/AppError.js';
 import { SystemRole } from '../../users/enums.js';
 import { PermissionDeniedError } from '../../../lib/auth/error.js';
-import { PaginationParams } from '../../../lib/http/pagination/cursor-pagination.js';
+import { FilterParams, PaginationParams } from '../../../lib/http/pagination/cursor-pagination.js';
 import { isBranchOpen } from '../../../lib/utils/branchTime.js';
 import { env } from '../../../lib/config/env.js';
 
@@ -162,6 +179,76 @@ export class OrderService {
       data: result.data.map((o) => OrderSummaryResponseDTO.from(o, counts.get(o.id) ?? 0)),
       meta: result.meta,
     };
+  }
+
+  async listRestaurantOrders(
+    user: JwtPayloadType,
+    restaurantId: number,
+    pagination: PaginationParams,
+    filters: FilterParams[],
+  ) {
+    const memberships = user.memberships ?? [];
+    const membership = memberships.find((m) => Number(m.restaurantId) === Number(restaurantId));
+
+    if (!membership) {
+      throw PermissionDeniedError;
+    }
+
+    const branchIds = membership.restaurantRole === 'owner' ? [] : membership.branchIds.map(Number);
+
+    const result = await findOrdersByRestaurant(restaurantId, branchIds, pagination, filters);
+    const counts = await countItemsByOrderIds(result.data.map((o) => o.id));
+    return {
+      data: result.data.map((o) => OrderSummaryResponseDTO.from(o, counts.get(o.id) ?? 0)),
+      meta: result.meta,
+    };
+  }
+
+  async listBranchOrders(branchId: number, pagination: PaginationParams, filters: FilterParams[]) {
+    const result = await findOrdersByBranch(branchId, pagination, filters);
+    const counts = await countItemsByOrderIds(result.data.map((o) => o.id));
+    return {
+      data: result.data.map((o) => OrderSummaryResponseDTO.from(o, counts.get(o.id) ?? 0)),
+      meta: result.meta,
+    };
+  }
+
+  async updateOrderStatus(order: Order, status: OrderStatus) {
+    const validTransitions: Record<string, OrderStatus[]> = {
+      // [OrderStatus.PENDING_PAYMENT]: [OrderStatus.PLACED, OrderStatus.CANCELLED],
+      [OrderStatus.PLACED]: [OrderStatus.ACCEPTED, OrderStatus.REJECTED, OrderStatus.CANCELLED],
+      [OrderStatus.ACCEPTED]: [OrderStatus.PREPARING, OrderStatus.CANCELLED],
+      [OrderStatus.PREPARING]: [OrderStatus.READY],
+      // [OrderStatus.READY]: [OrderStatus.ASSIGNED, OrderStatus.DELIVERED, OrderStatus.CANCELLED],
+      // [OrderStatus.ASSIGNED]: [OrderStatus.PICKED, OrderStatus.CANCELLED],
+      // [OrderStatus.PICKED]: [OrderStatus.DELIVERED, OrderStatus.CANCELLED],
+      // [OrderStatus.DELIVERED]: [],
+      // [OrderStatus.CANCELLED]: [],
+      // [OrderStatus.REJECTED]: [],
+    };
+
+    const allowed = validTransitions[order.status];
+    if (!allowed || !allowed.includes(status)) {
+      throw invalidStatusTransitionError(order.status, status);
+    }
+
+    const stampColumnMap: Record<string, string> = {
+      [OrderStatus.ACCEPTED]: 'accepted_at',
+      [OrderStatus.REJECTED]: 'rejected_at',
+      [OrderStatus.READY]: 'ready_at',
+      [OrderStatus.CANCELLED]: 'cancelled_at',
+      [OrderStatus.DELIVERED]: 'delivered_at',
+    };
+
+    const updated = await updateOrderStatus(order.public_id, status, stampColumnMap[status] ?? null);
+
+    const io = this.io;
+    io.to(`branch:${order.branch_id}`).emit('order.status.updated', {
+      publicId: order.public_id,
+      status,
+    });
+
+    return OrderStatusResponseDTO.from(updated);
   }
 
   // ── private helpers ──────────────────────────────────────────────────

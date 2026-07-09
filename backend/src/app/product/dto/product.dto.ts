@@ -11,7 +11,7 @@ export class CreateProductDTO {
 
     @IsOptional()
     @IsString()
-    image_url?: string;
+    image_url?: string | null;
 
     @IsOptional()
     @IsString()
@@ -35,8 +35,10 @@ export class UpdateProductDTO {
     @IsOptional()
     @IsString()
     category_name?: string;
+}
 
-    // branch-level overrides (requires branchId query param)
+
+export class UpdateProductBranchDTO {
     @IsOptional()
     @IsInt()
     @Min(0)
@@ -51,3 +53,4 @@ export class UpdateProductDTO {
     @IsBoolean()
     is_available?: boolean;
 }
+

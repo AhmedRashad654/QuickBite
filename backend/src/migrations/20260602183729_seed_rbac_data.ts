@@ -22,6 +22,7 @@ export async function up(knex: Knex): Promise<void> {
         ('core:product', 'create', NOW()),
         ('core:product', 'read', NOW()),
         ('core:product', 'update', NOW()),
+        ('core:product', 'update_branch', NOW()),
 
         -- Member permissions
         ('core:member', 'create', NOW()),
@@ -37,21 +38,22 @@ export async function up(knex: Knex): Promise<void> {
         ('core:restaurant', 'update', NOW()),
 
         -- Orders permissions
-        ('orders', 'read', NOW()),
-        ('orders', 'accept', NOW()),
-        ('orders', 'update', NOW()),
-        ('orders', 'cancel', NOW()),
+        ('core:orders', 'read', NOW()),
+        ('core:orders', 'accept', NOW()),
+        ('core:orders', 'reject', NOW()),
+        ('core:orders', 'update', NOW()),
+        ('core:orders', 'cancel', NOW()),
 
         -- Payments permissions
-        ('payments', 'read', NOW()),
-        ('payments', 'refund', NOW()),
+        ('core:payments', 'read', NOW()),
+        ('core:payments', 'refund', NOW()),
 
         -- Delivery permissions
-        ('deliveries', 'assign', NOW()),
+        ('core:deliveries', 'assign', NOW()),
  
         -- finance permissions
-        ('finance', 'read', NOW()),
-        ('finance', 'payout_create', NOW())
+        ('core:finance', 'read', NOW()),
+        ('core:finance', 'payout_create', NOW())
 
         ON CONFLICT (resource, action) DO NOTHING;
     `);
@@ -70,13 +72,13 @@ export async function up(knex: Knex): Promise<void> {
         SELECT r.id, p.id, NOW() FROM roles r, permissions p
         WHERE r.name = 'branch_manager'
         AND p.resource || ':' || p.action IN (
-            'core:product:create',
             'core:product:read',
-            'core:product:update',
+            'core:product:update_branch',
             'core:member:read',
             'core:branch:update',
             'core:orders:read',
             'core:orders:accept',
+            'core:orders:reject',
             'core:orders:update',
             'core:orders:cancel',
             'core:finance:read'

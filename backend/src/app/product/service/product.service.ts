@@ -1,11 +1,7 @@
-import { PermissionDeniedError } from '../../../lib/auth/error.js';
 import { isBranchOpen } from '../../../lib/utils/branchTime.js';
 import { BranchNotFoundError } from '../../branch/errors.js';
 import { findBranchByIdWithRestaurant } from '../../branch/repository/branch.repo.js';
-import { RestaurantNotFoundError } from '../../restaurant/errors.js';
-import { findRestaurantById } from '../../restaurant/repository/restaurant.repo.js';
-import { SystemRole } from '../../users/enums.js';
-import { CreateProductDTO, UpdateProductDTO } from '../dto/product.dto.js';
+import { CreateProductDTO, UpdateProductBranchDTO, UpdateProductDTO } from '../dto/product.dto.js';
 import { ProductNotFoundError } from '../errors.js';
 import { createCategory, findCategoriesByRestaurant, findCategoryByName } from '../repository/category.repo.js';
 import { updateBranchProductDetails } from '../repository/product-branch-details.repo.js';
@@ -18,13 +14,7 @@ import {
 } from '../repository/product.repo.js';
 
 export class ProductService {
-  create = async (restaurantId: number, userId: number, userRole: SystemRole, data: CreateProductDTO) => {
-    const restaurant = await findRestaurantById(restaurantId);
-    if (!restaurant) throw RestaurantNotFoundError;
-    if (userRole !== SystemRole.SYSTEM_ADMIN && Number(restaurant.owner_id) !== Number(userId)) {
-      throw PermissionDeniedError;
-    }
-
+  create = async (restaurantId: number, data: CreateProductDTO) => {
     let categoryId: number | undefined = undefined;
     if (data.category_name) {
       let category = await findCategoryByName(restaurantId, data.category_name);
@@ -43,12 +33,7 @@ export class ProductService {
     });
   };
 
-  findByRestaurant = async (restaurantId: number, userId: number, userRole: SystemRole) => {
-    const restaurant = await findRestaurantById(restaurantId);
-    if (!restaurant) throw RestaurantNotFoundError;
-    if (userRole !== SystemRole.SYSTEM_ADMIN && Number(restaurant.owner_id) !== Number(userId)) {
-      throw PermissionDeniedError;
-    }
+  findByRestaurant = async (restaurantId: number) => {
     return await findProductsByRestaurant(restaurantId);
   };
 
@@ -100,6 +85,34 @@ export class ProductService {
     };
   };
 
+  findByBranchForRestaurantUser = async (branchId: number) => {
+    const products = await findProductsByBranch(branchId);
+    const categoriesMap: Record<number, any> = {};
+    products.forEach((row) => {
+      const categoryId = row.category_id || 0;
+      const categoryName = row.category_name || 'Others';
+
+      if (!categoriesMap[categoryId]) {
+        categoriesMap[categoryId] = {
+          category_id: categoryId,
+          category_name: categoryName,
+          products: [],
+        };
+      }
+
+      categoriesMap[categoryId].products.push({
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        image_url: row.image_url,
+        price: row.price,
+        stock: row.stock,
+        is_available: row.is_available,
+      });
+    });
+    return Object.values(categoriesMap);
+  };
+
   findById = async (id: number) => {
     const product = await findProductById(id);
     if (!product) {
@@ -108,29 +121,12 @@ export class ProductService {
     return product;
   };
 
-  update = async (
-    productId: number,
-    userId: number,
-    userRole: SystemRole,
-    data: UpdateProductDTO,
-    branchId?: number,
-  ) => {
-    const product = await findProductById(productId);
-    if (!product) {
-      throw ProductNotFoundError;
-    }
-
-    const restaurant = await findRestaurantById(product.restaurant_id);
-    if (!restaurant) throw RestaurantNotFoundError;
-    if (userRole !== SystemRole.SYSTEM_ADMIN && Number(restaurant.owner_id) !== Number(userId)) {
-      throw PermissionDeniedError;
-    }
-
+  update = async (productId: number, restaurantId: number, data: UpdateProductDTO) => {
     let categoryId: number | undefined = undefined;
     if (data.category_name) {
-      let category = await findCategoryByName(product.restaurant_id, data.category_name);
+      let category = await findCategoryByName(restaurantId, data.category_name);
       if (!category) {
-        category = await createCategory(product.restaurant_id, data.category_name);
+        category = await createCategory(restaurantId, data.category_name);
       }
       categoryId = category.id;
     }
@@ -142,6 +138,12 @@ export class ProductService {
       category_id: categoryId,
     });
 
+    return updatedProduct;
+  };
+
+  updateProductBranch = async (productId: number, branchId: number, data: UpdateProductBranchDTO) => {
+    const product = await findProductById(productId);
+    if (!product) throw ProductNotFoundError;
     let branchDetails;
     if (branchId && (data.price !== undefined || data.stock !== undefined || data.is_available !== undefined)) {
       branchDetails = await updateBranchProductDetails(branchId, productId, {
@@ -151,6 +153,6 @@ export class ProductService {
       });
     }
 
-    return { product: updatedProduct, branchDetails };
+    return branchDetails;
   };
 }

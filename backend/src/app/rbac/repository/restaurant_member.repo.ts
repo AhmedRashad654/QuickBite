@@ -1,17 +1,10 @@
 import { Knex } from 'knex';
 import { db } from '../../../lib/knex/knex.js';
-import { RestaurantMember } from '../type.js';
+import { RestaurantMember, ResultRestaurantsWithRole } from '../type.js';
 import { MemberStatus } from '../enums.js';
+import { RestaurantStatus } from '../../restaurant/enums.js';
 
-const MEMBER_COLUMNS = [
-  'id',
-  'restaurant_id',
-  'user_id',
-  'role_id',
-  'status',
-  'created_at',
-  'updated_at',
-];
+const MEMBER_COLUMNS = ['id', 'restaurant_id', 'user_id', 'role_id', 'status', 'created_at', 'updated_at'];
 
 export async function createRestaurantMember(
   data: Partial<RestaurantMember>,
@@ -36,14 +29,31 @@ export async function activateMemberByUserId(userId: number, conn: Knex = db): P
     .update({ status: MemberStatus.ACTIVE, updated_at: new Date() });
 }
 
-export async function findRestaurantsWithRole(
-  userId: number,
-): Promise<{ restaurant_id: number; member_id: number; role_name: string }[]> {
+export async function findRestaurantsWithRole(userId: number): Promise<ResultRestaurantsWithRole[]> {
   const rows = await db('restaurant_members as rm')
-    .select('rm.restaurant_id', 'rm.id as member_id', 'r.name as role_name')
-    .leftJoin('roles as r', 'rm.role_id', 'r.id')
+    .select(
+      'rm.restaurant_id',
+      'rm.id as member_id',
+      'rm.status as stauts_member',
+      'ro.name as role_name',
+      'r.name as restaurant_name',
+      'r.status as restaurant_status'
+    )
+    .leftJoin('roles as ro', 'rm.role_id', 'ro.id')
+    .leftJoin('restaurants as r', 'rm.restaurant_id', 'r.id')
+    .where('rm.user_id', userId);
+
+  return rows;
+}
+
+export async function findRestaurantsActiveWithRole(
+  userId: number,
+): Promise<ResultRestaurantsWithRole[]> {
+  const rows = await db('restaurant_members as rm')
+    .select('rm.restaurant_id', 'rm.id as member_id', 'ro.name as role_name')
+    .leftJoin('roles as ro', 'rm.role_id', 'ro.id')
     .where('rm.user_id', userId)
-    .andWhere('rm.status', MemberStatus.ACTIVE);
+    .andWhere('rm.status', MemberStatus.ACTIVE)
 
   return rows;
 }

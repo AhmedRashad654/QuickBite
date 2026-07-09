@@ -1,5 +1,8 @@
-
-export function memberInvitationNew(otp: string, role: string): { subject: string; html: string } {
+export function memberInvitationNew(
+  otp: string, 
+  role: string, 
+  setupPasswordLink: string
+): { subject: string; html: string } {
   const subject = `📩 You are invited to join QuickBite as a ${role}`;
 
   const formattedRole = role.toUpperCase();
@@ -57,7 +60,7 @@ export function memberInvitationNew(otp: string, role: string): { subject: strin
                   </div>
 
                   <p style="font-size: 16px; line-height: 1.6; color: #555555; text-align: center;">
-                    Please use the invitation code below to accept the invite and set up your account:
+                    Please use the invitation code below to accept the invite:
                   </p>
 
                   <table border="0" cellpadding="0" cellspacing="0" width="100%">
@@ -74,8 +77,28 @@ export function memberInvitationNew(otp: string, role: string): { subject: strin
                     </tr>
                   </table>
 
+                  <p style="font-size: 16px; line-height: 1.6; color: #555555; text-align: center; margin-top: 25px;">
+                    Click the button below to set up your password and access your account:
+                  </p>
+
+                  <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td align="center" style="padding: 15px 0 25px 0;">
+                        <table border="0" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td align="center" bgcolor="#FF5A5F" style="border-radius: 6px;">
+                              <a href="${setupPasswordLink}" target="_blank" style="display: inline-block; padding: 14px 32px; color: #ffffff; font-size: 16px; font-weight: bold; text-decoration: none; letter-spacing: 0.5px;">
+                                Set Up Your Password →
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+
                   <p style="font-size: 14px; line-height: 1.5; color: #777777; border-top: 1px solid #eaeaea; padding-top: 20px; margin-top: 25px;">
-                    💡 <strong>Note:</strong> This invitation code is sensitive and belongs to your designated email. Do not share it with anyone else.
+                    💡 <strong>Note:</strong> This invitation code and link are sensitive and belong to your designated email. Do not share them with anyone else.
                   </p>
                 </td>
               </tr>

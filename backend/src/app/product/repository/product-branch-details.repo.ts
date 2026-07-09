@@ -45,3 +45,8 @@ export async function getBranchProductsForUpdate(branchId: number, productIds: n
     .forUpdate();
   return rows;
 }
+
+export async function getProductByBranchId(branchId: number) {
+  const row = await db('product_branch_details as pbd').select(PBD_COLUMNS).where('id', branchId).first();
+  return row;
+}

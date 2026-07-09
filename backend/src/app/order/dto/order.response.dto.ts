@@ -21,7 +21,6 @@ export class OrderItemResponseDTO {
   }
 }
 
-
 export class OrderSummaryResponseDTO {
   public_id!: string;
   status!: OrderStatus;
@@ -141,8 +140,12 @@ function buildHistory(order: Order): Array<{ status: OrderStatus; ts: string }> 
   };
 
   if (order.payment_method === PaymentMethod.ONLINE) {
-    push(OrderStatus.PENDING_PAYMENT, order.created_at);
-    push(OrderStatus.PLACED, order.created_at);
+    if (order.status === OrderStatus.PENDING_PAYMENT) {
+      push(OrderStatus.PENDING_PAYMENT, order.created_at);
+    } else if (order.status === OrderStatus.PLACED) {
+      push(OrderStatus.PENDING_PAYMENT, order.created_at);
+      push(OrderStatus.PLACED, order.created_at);
+    }
   } else {
     push(OrderStatus.PLACED, order.created_at);
   }

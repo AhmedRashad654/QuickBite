@@ -2,7 +2,12 @@ import { Router } from 'express';
 import { container } from '../../lib/di/container.js';
 import { ProductController } from './controller/product.controller.js';
 import { authenticate } from '../../lib/auth/guard.js';
-import { rbac, requireBranchAccess, requireRestaurantMember } from '../../lib/auth/rbac.js';
+import {
+  injectRestaurantIdFromProduct,
+  rbac,
+  requireBranchAccess,
+  requireRestaurantMember,
+} from '../../lib/auth/rbac.js';
 import { TOKENS } from '../../lib/di/tokens.js';
 
 export const productRouter = Router();
@@ -18,18 +23,35 @@ productRouter.get(
   productController.findByRestaurant,
 );
 productRouter.get('/branches/:branchId', productController.findByBranch);
+
+productRouter.get(
+  '/branches/:branchId/restaurant_user',
+  authenticate,
+  requireBranchAccess('branchId'),
+  rbac({ resource: 'core:product', action: 'read' }),
+  productController.findByBranchForRestaurantUser,
+);
 productRouter.get('/:id', productController.findById);
 productRouter.post(
   '/restaurants/:restaurantId',
+  authenticate,
   requireRestaurantMember('restaurantId'),
   rbac({ resource: 'core:product', action: 'create' }),
-  authenticate,
   productController.create,
 );
 productRouter.patch(
-  '/:id',
+  '/:productId/restaurant',
   authenticate,
-  requireBranchAccess('branchId'),
+  injectRestaurantIdFromProduct('productId'),
+  requireRestaurantMember('restaurantId'),
   rbac({ resource: 'core:product', action: 'update' }),
   productController.update,
+);
+
+productRouter.patch(
+  '/:productId/branch/:branchId',
+  authenticate,
+  requireBranchAccess('branchId'),
+  rbac({ resource: 'core:product', action: 'update_branch' }),
+  productController.updateProductBranch,
 );

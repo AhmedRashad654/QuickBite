@@ -3,7 +3,7 @@ import { SystemRole } from './enums.js';
 export interface User {
   id: number;
   email: string;
-  phone: string;
+  phone: string | null;
   name: string;
   password_hash: string;
   system_role: SystemRole;
@@ -15,7 +15,7 @@ export interface User {
 
 export interface CreateUserData {
   email: string;
-  phone: string;
+  phone: string | null;
   name: string;
   password: string;
   system_role: SystemRole;

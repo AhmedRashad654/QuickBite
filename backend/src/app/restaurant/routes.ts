@@ -11,7 +11,8 @@ const restaurantController = container.resolve<RestaurantController>(TOKENS.Rest
 
 restaurantRouter.get('/', restaurantController.getAll);
 restaurantRouter.get('/:id', restaurantController.getById);
-restaurantRouter.post('/', authenticate, restaurantController.createWithOwner);
+restaurantRouter.post('/admin', authenticate, restaurantController.createWithOwner);
+restaurantRouter.post('/', authenticate, restaurantController.create);
 restaurantRouter.patch(
   '/:id',
   authenticate,

@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { s3Forders } from '../enum.js';
 
 export class CreatePresignedUrl {
@@ -9,4 +9,9 @@ export class CreatePresignedUrl {
   @IsString()
   @IsNotEmpty()
   contentType!: string;
+
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  oldKey?: string;
 }

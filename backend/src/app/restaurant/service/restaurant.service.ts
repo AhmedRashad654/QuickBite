@@ -19,11 +19,18 @@ import { createUser, findUserExistsByEmailOrPhone } from '../../users/repository
 import { hashPassword } from '../../auth/utils.js';
 import { db } from '../../../lib/knex/knex.js';
 import { RestaurantStatus } from '../enums.js';
-import { injectable } from 'tsyringe';
-import { buildPaginationResult, FilterParams, PaginationParams } from '../../../lib/http/pagination/cursor-pagination.js';
+import { inject, injectable } from 'tsyringe';
+import {
+  buildPaginationResult,
+  FilterParams,
+  PaginationParams,
+} from '../../../lib/http/pagination/cursor-pagination.js';
+import { TOKENS } from '../../../lib/di/tokens.js';
+import { MemberService } from '../../rbac/service/member.service.js';
 
 @injectable()
 export class RestaurantService {
+  constructor(@inject(TOKENS.MemberService) private readonly memberService: MemberService) {}
   createWithOwner = async (userRole: SystemRole, data: CreateRestaurantWithOwnerDTO) => {
     if (userRole !== SystemRole.SYSTEM_ADMIN) {
       throw PermissionDeniedError;
@@ -78,16 +85,24 @@ export class RestaurantService {
     }
   };
 
-  create = async (userId: number, data: CreateRestaurantDTO, trx: Knex) => {
-    const restaurant = {
+  create = async (userId: number, data: CreateRestaurantDTO, trx: Knex.Transaction) => {
+    const restaurantPayload = {
       ...data,
-      logo_url: data.logo_url ?? '',
+      logo_url: data.logo_url ?? null,
       owner_id: userId,
     };
-    const result = await createRestaurant(restaurant, trx);
-    return result;
-  };
 
+    let restaurant;
+    try {
+      restaurant = await createRestaurant(restaurantPayload, trx);
+      await this.memberService.createOwnerMember(restaurant.id, userId, trx);
+      await trx.commit();
+    } catch {
+      await trx.rollback();
+    }
+
+    return restaurant;
+  };
   findAll = async (params: PaginationParams, filters: FilterParams[]) => {
     const result = await findAllRestaurants(params, filters);
     return buildPaginationResult(result, params.limit, params.sortBy);

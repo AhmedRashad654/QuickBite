@@ -173,7 +173,7 @@ export async function findOrdersByRestaurantBranch(
   pagination: PaginationParams,
   extraFilters: FilterParams[],
   conn: Knex,
-): Promise<Order> {
+): Promise<ListResult<Order>> {
   let query = conn('orders')
     .select(ORDER_COLUMNS as unknown as string[])
     .where('restaurant_id', filter.restaurantId)
@@ -185,5 +185,49 @@ export async function findOrdersByRestaurantBranch(
 
   query = applyFilters(query, extraFilters);
   const rows = await applyCursorPagination(query, pagination);
-  return rows;
+  const result = buildPaginationResult(rows, pagination.limit, pagination.sortBy);
+  return { data: result.data as Order[], meta: result.meta };
+}
+
+export async function findOrdersByRestaurant(
+  restaurantId: number,
+  branchIds: number[],
+  pagination: PaginationParams,
+  extraFilters: FilterParams[],
+  conn: Knex = db,
+): Promise<ListResult<Order>> {
+  let query = conn('orders')
+    .select(ORDER_COLUMNS as unknown as string[])
+    .where('restaurant_id', restaurantId);
+
+  if (branchIds.length > 0) {
+    query = query.whereIn('branch_id', branchIds);
+  }
+
+  if (extraFilters.length > 0) {
+    query = applyFilters(query, extraFilters);
+  }
+
+  const rows = await applyCursorPagination(query, pagination);
+  const result = buildPaginationResult(rows, pagination.limit, pagination.sortBy);
+  return { data: result.data as Order[], meta: result.meta };
+}
+
+export async function findOrdersByBranch(
+  branchId: number,
+  pagination: PaginationParams,
+  extraFilters: FilterParams[],
+  conn: Knex = db,
+): Promise<ListResult<Order>> {
+  let query = conn('orders')
+    .select(ORDER_COLUMNS as unknown as string[])
+    .where('branch_id', branchId);
+
+  if (extraFilters.length > 0) {
+    query = applyFilters(query, extraFilters);
+  }
+
+  const rows = await applyCursorPagination(query, pagination);
+  const result = buildPaginationResult(rows, pagination.limit, pagination.sortBy);
+  return { data: result.data as Order[], meta: result.meta };
 }

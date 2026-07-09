@@ -1,6 +1,6 @@
 import { Response, Request } from 'express';
 import { validateBody } from '../../../lib/validation/validate.js';
-import { CreateMemberDTO, UpdateMemberBranchesDTO, UpdateMemberDTO } from '../dto/member.dto.js';
+import { CreateMemberDTO, UpdateMemberDTO } from '../dto/member.dto.js';
 import { MemberService } from '../service/member.service.js';
 import { inject, injectable } from 'tsyringe';
 import { TOKENS } from '../../../lib/di/tokens.js';
@@ -13,37 +13,23 @@ export class MemberController {
   createMember = async (req: Request, res: Response) => {
     const data = await validateBody(CreateMemberDTO, req.body);
     const result = await this.memberService.createMember(Number(req.params.restaurantId), data);
-    sendSuccess(res, result, undefined,201);
+    sendSuccess(res, result, 'Member invited successfully', 201);
   };
 
-  listMembers = async (req: Request, res: Response) => {
-    const result = await this.memberService.listMembers(Number(req.params.restaurantId));
+  getMembersByBranchId = async (req: Request, res: Response) => {
+    const result = await this.memberService.getMembersByBranchId(Number(req.params.branchId));
     sendSuccess(res, result);
   };
 
   updateMember = async (req: Request, res: Response) => {
     const data = await validateBody(UpdateMemberDTO, req.body);
-    const result = await this.memberService.updateMember(
-      Number(req.params.restaurantId),
-      Number(req.params.memberId),
-      data,
-    );
-    sendSuccess(res, result);
+    await this.memberService.updateMember(Number(req.params.restaurantId), Number(req.params.memberId), data);
+    sendSuccess(res, undefined, 'Member updated successfully');
   };
 
   deleteMember = async (req: Request, res: Response) => {
-    const result = await this.memberService.deleteMember(Number(req.params.restaurantId), Number(req.params.memberId));
-    sendSuccess(res, result);
-  };
-
-  updateMemberBranches = async (req: Request, res: Response) => {
-    const data = await validateBody(UpdateMemberBranchesDTO, req.body);
-    const result = await this.memberService.updateMemberBranches(
-      Number(req.params.restaurantId),
-      Number(req.params.memberId),
-      data,
-    );
-    sendSuccess(res, result);
+    await this.memberService.deleteMember(Number(req.params.restaurantId), Number(req.params.memberId));
+    sendSuccess(res, undefined, 'Member deleted successfully');
   };
 
   getRolePermissions = async (req: Request, res: Response) => {

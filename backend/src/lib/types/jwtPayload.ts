@@ -5,6 +5,7 @@ export interface JwtPayloadType {
   memberships?: {
     restaurantId: number;
     restaurantRole: string;
+    restaurantName?: string; 
     branchIds: number[];
   }[];
 }

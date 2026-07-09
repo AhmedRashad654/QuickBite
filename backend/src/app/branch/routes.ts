@@ -11,7 +11,12 @@ export const branchRouter = Router();
 const branchController = container.resolve<BranchController>(TOKENS.BranchController);
 
 branchRouter.get('/nearby', withCache(), branchController.findNearby);
-branchRouter.get('/:restaurantId', branchController.findByRestaurant);
+branchRouter.get(
+  '/:restaurantId',
+  authenticate,
+  requireRestaurantMember('restaurantId'),
+  branchController.findByRestaurant,
+);
 branchRouter.post(
   '/:restaurantId',
   authenticate,
@@ -20,9 +25,9 @@ branchRouter.post(
   branchController.create,
 );
 branchRouter.patch(
-  '/:id',
+  '/:branchId',
   authenticate,
-  requireBranchAccess('id'),
+  requireBranchAccess('branchId'),
   rbac({ resource: 'core:branch', action: 'update' }),
   branchController.update,
 );

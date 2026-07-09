@@ -1,5 +1,5 @@
 import { ArrayMinSize, IsEnum, IsInt, IsNotEmpty, Max, Min, ValidateIf, ValidateNested } from 'class-validator';
-import { OrderType, PaymentMethod } from '../enums.js';
+import { OrderStatus, OrderType, PaymentMethod } from '../enums.js';
 import { Type } from 'class-transformer';
 
 export class OrderItemDTO {
@@ -35,4 +35,9 @@ export class CreateOrderDTO {
   @ValidateNested({ each: true })
   @Type(() => OrderItemDTO)
   items!: OrderItemDTO[];
+}
+
+export class UpdateOrderStatusDTO {
+  @IsEnum(OrderStatus)
+  status!: OrderStatus;
 }

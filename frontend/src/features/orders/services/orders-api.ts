@@ -8,7 +8,6 @@ export const getCustomerOrders = async (year: number, cursor?: string) => {
     year,
     limit: 10,
     sortBy: "created_at",
-    sortOrder: "desc",
   };
   if (cursor) params.cursor = cursor;
 

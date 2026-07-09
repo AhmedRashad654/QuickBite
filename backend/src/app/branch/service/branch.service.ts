@@ -1,7 +1,5 @@
 import { injectable } from 'tsyringe';
 import { PermissionDeniedError } from '../../../lib/auth/error.js';
-import { RestaurantNotFoundError } from '../../restaurant/errors.js';
-import { findRestaurantById } from '../../restaurant/repository/restaurant.repo.js';
 import { SystemRole } from '../../users/enums.js';
 import { CreateBranchDTO, UpdateBranchDTO, UpdateBranchStatusDTO } from '../dto/branch.dto.js';
 import { BranchNotFoundError } from '../errors.js';
@@ -41,21 +39,11 @@ export class BranchService {
     return { branches, isFallback };
   };
 
-  findByRestaurant = async (restaurantId: number) => {
-    return await findBranchesByRestaurant(restaurantId);
-  };
+  findByRestaurant = async (restaurantId: number, isSuperUser: boolean, allowedBranchIds?: number[]) => {
+  return await findBranchesByRestaurant(restaurantId, isSuperUser, allowedBranchIds);
+};
 
-  create = async (restaurantId: number, userId: number, userRole: SystemRole, data: CreateBranchDTO) => {
-    const restaurant = await findRestaurantById(restaurantId);
-
-    if (!restaurant) {
-      throw RestaurantNotFoundError;
-    }
-
-    if (userRole != SystemRole.SYSTEM_ADMIN && Number(restaurant.owner_id) !== Number(userId)) {
-      throw PermissionDeniedError;
-    }
-
+  create = async (restaurantId: number, data: CreateBranchDTO) => {
     const branch = await createBranch({
       restaurant_id: restaurantId,
       label: data.label,
@@ -68,24 +56,14 @@ export class BranchService {
       closes_at: data.closes_at,
       currency: data.currency,
       commission: 0,
+      delivery_fee: data.delivery_fee,
       accept_orders: false,
     });
 
     return branch;
   };
 
-  update = async (branchId: number, userId: number, userRole: SystemRole, data: UpdateBranchDTO) => {
-    const branch = await findBranchById(branchId);
-    if (!branch) {
-      throw BranchNotFoundError;
-    }
-
-    const restaurant = await findRestaurantById(branch.restaurant_id);
-    if (!restaurant) throw RestaurantNotFoundError;
-    if (userRole !== SystemRole.SYSTEM_ADMIN && Number(restaurant.owner_id) !== Number(userId)) {
-      throw PermissionDeniedError;
-    }
-
+  update = async (branchId: number, data: UpdateBranchDTO) => {
     return await updateBranch(branchId, data);
   };
 

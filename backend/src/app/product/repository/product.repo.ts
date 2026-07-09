@@ -7,6 +7,7 @@ const PRODUCT_COLUMNS = [
   'name',
   'description',
   'image_url',
+  'image_version',
   'restaurant_id',
   'category_id',
   'created_at',
@@ -19,9 +20,10 @@ export async function createProduct(data: Partial<Product>): Promise<Product> {
     .insert({
       name: data.name,
       description: data.description,
-      image_url: data.image_url,
+      image_url: data.image_url || null,
       restaurant_id: data.restaurant_id,
       category_id: data.category_id,
+      image_version: data.image_url && data.image_url !== null && data.image_url.trim() !== '' ? 1 : 0,
     })
     .returning(PRODUCT_COLUMNS);
   return row;
@@ -33,10 +35,24 @@ export async function findProductById(id: number): Promise<Product | null> {
 }
 
 export async function findProductsByRestaurant(restaurantId: number): Promise<Product[]> {
-  const rows = await db('products')
-    .select(PRODUCT_COLUMNS)
-    .where('restaurant_id', restaurantId)
-    .whereNull('deleted_at');
+  const rows = await db('products as p')
+    .leftJoin('product_categories as pc', 'p.category_id', 'pc.id')
+    .select(
+      'p.*',
+      'pc.name as category_name',
+      db.raw(
+        `
+        CASE 
+          WHEN p.image_url IS NOT NULL THEN CONCAT(p.image_url, ?::text, COALESCE(p.image_version, 1))
+          ELSE NULL 
+        END as image_url
+      `,
+        ['?v='],
+      ),
+    )
+    .where('p.restaurant_id', restaurantId)
+    .whereNull('p.deleted_at');
+
   return rows;
 }
 
@@ -67,6 +83,9 @@ export async function updateProduct(id: number, data: Partial<Product>): Promise
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description;
   if (data.image_url !== undefined) updateData.image_url = data.image_url;
+  if (data.image_url !== null && data.image_url !== null) {
+    updateData.image_version = db.raw('COALESCE(image_version, 1) + 1');
+  }
   if (data.category_id !== undefined) updateData.category_id = data.category_id;
 
   if (Object.keys(updateData).length === 0) {

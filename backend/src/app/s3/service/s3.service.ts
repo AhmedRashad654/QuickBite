@@ -19,14 +19,16 @@ export class S3Service {
     });
   }
 
-
   generateUploadUrl = async (data: CreatePresignedUrl) => {
     const bucketName = env.s3.awsS3BucketName;
-
-    const uniqueFileName = `${crypto.randomBytes(16).toString('hex')}`;
-
-    const fileExtension = data.contentType.split('/')[1] || 'jpg';
-    const key = `${data.folder}/${uniqueFileName}.${fileExtension}`;
+    let key = '';
+    if (data.oldKey) {
+      key = data.oldKey;
+    } else {
+      const uniqueFileName = `${crypto.randomBytes(16).toString('hex')}`;
+      const fileExtension = data.contentType.split('/')[1] || 'jpg';
+      key = `${data.folder}/${uniqueFileName}.${fileExtension}`;
+    }
 
     const command = new PutObjectCommand({
       Bucket: bucketName,

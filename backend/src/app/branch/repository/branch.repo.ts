@@ -39,15 +39,28 @@ export async function createBranch(data: Partial<Branch>, conn: Knex = db): Prom
       accept_orders: data.accept_orders,
       currency: data.currency,
       commission: data.commission,
+      delivery_fee: data.delivery_fee,
     })
     .returning(BRANCH_COLUMNS);
 
   return row;
 }
 
-export async function findBranchesByRestaurant(restaurantId: number): Promise<Branch[]> {
-  const rows = await db('restaurant_branches').select(BRANCH_COLUMNS).where('restaurant_id', restaurantId);
-  return rows;
+
+export async function findBranchesByRestaurant(
+  restaurantId: number, 
+  isSuperUser: boolean,
+  allowedBranchIds?: number[]
+): Promise<Branch[]> {
+  
+  const query = db('restaurant_branches')
+    .select(BRANCH_COLUMNS)
+    .where('restaurant_id', restaurantId);
+  if (!isSuperUser && allowedBranchIds) {
+    query.whereIn('id', allowedBranchIds); 
+  }
+
+  return await query;
 }
 
 export async function findBranchById(id: number): Promise<Branch | null> {
@@ -93,8 +106,8 @@ export async function updateBranch(id: number, data: Partial<Branch>): Promise<B
   if (data.lng !== undefined) mapped.lng = data.lng;
   if (data.opens_at !== undefined) mapped.opens_at = data.opens_at;
   if (data.closes_at !== undefined) mapped.closes_at = data.closes_at;
-  if (data.currency !== undefined) mapped.currency = data.currency;
   if (data.accept_orders !== undefined) mapped.accept_orders = data.accept_orders;
+  if (data.delivery_fee !== undefined) mapped.delivery_fee = data.delivery_fee;
   if (Object.keys(mapped).length === 0) {
     throw NoFieldsToUpdateError;
   }

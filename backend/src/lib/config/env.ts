@@ -12,6 +12,7 @@ const ROOT_DIR = path.resolve(__dirname, '../../../');
 const schema = z.object({
   PORT: z.string(),
   NODE_ENV: z.string(),
+  FRONTEND_URL: z.string(),
   DB_HOST: z.string(),
   DB_PORT: z.string(),
   POSTGRES_USER: z.string(),
@@ -71,6 +72,7 @@ const parsed = schema.parse(process.env);
 export const env = {
   port: Number(parsed.PORT),
   nodeEnv: parsed.NODE_ENV,
+  frontendUrl: parsed.FRONTEND_URL,
   db: {
     host: parsed.DB_HOST,
     port: Number(parsed.DB_PORT),

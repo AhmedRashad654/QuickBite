@@ -1,0 +1,226 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { Plus, ChevronsUpDown, Check } from "lucide-react";
+import { productSchema, type ProductFormValues } from "../schemas";
+import { Controller, useForm, useWatch, type Resolver } from "react-hook-form";
+import { useCategories, useCreateProduct } from "../hooks/restaurant-hooks";
+import type { Dispatch, SetStateAction } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { cn } from "@/lib/utils";
+import { ImageUpload } from "@/components/shared/ImageUpload";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+
+const DialogCreateProduct = ({
+  open,
+  setOpen,
+}: {
+  open: boolean;
+  setOpen: Dispatch<SetStateAction<boolean>>;
+}) => {
+  const createProduct = useCreateProduct();
+  const { data: categoriesData } = useCategories();
+  const categories = Array.isArray(categoriesData) ? categoriesData : [];
+  const [catOpen, setCatOpen] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  const form = useForm<ProductFormValues>({
+    resolver: zodResolver(productSchema) as Resolver<ProductFormValues>,
+    defaultValues: {
+      name: "",
+      description: "",
+      image_url: null,
+      category_name: "",
+    },
+  });
+
+  const categoryValue = useWatch({
+    control: form.control,
+    name: "category_name",
+  });
+
+  const imageUrlValue = useWatch({
+    control: form.control,
+    name: "image_url",
+  });
+
+  const filteredCategories = categories.filter((cat) =>
+    cat.name.toLowerCase().includes((categoryValue ?? "").toLowerCase()),
+  );
+
+  const isNewCategory =
+    categoryValue?.trim() &&
+    !categories?.some(
+      (c) => c.name.toLowerCase() === categoryValue.toLowerCase(),
+    );
+
+  const onSubmit = (values: ProductFormValues) => {
+    createProduct.mutate(values, {
+      onSuccess: () => {
+        setOpen(false);
+        form.reset();
+      },
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm">
+          <Plus /> Add Product
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New Product</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <Controller
+            control={form.control}
+            name="name"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid} className="col-span-2">
+                <FieldLabel htmlFor="name">Name</FieldLabel>
+                <Input
+                  {...field}
+                  id="name"
+                  autoComplete="name"
+                  placeholder="Name"
+                  aria-invalid={fieldState.invalid}
+                />
+                {fieldState.invalid ? (
+                  <FieldError errors={[fieldState.error]} />
+                ) : null}
+              </Field>
+            )}
+          />
+
+          <Controller
+            control={form.control}
+            name="description"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.invalid} className="col-span-2">
+                <FieldLabel htmlFor="name">Description</FieldLabel>
+                <Input
+                  {...field}
+                  id="description"
+                  autoComplete="description"
+                  placeholder="Description"
+                  aria-invalid={fieldState.invalid}
+                />
+                {fieldState.invalid ? (
+                  <FieldError errors={[fieldState.error]} />
+                ) : null}
+              </Field>
+            )}
+          />
+
+          <div className="space-y-2">
+            <Label>Image</Label>
+            <ImageUpload
+              value={imageUrlValue ?? null}
+              onChange={(url) => form.setValue("image_url", url)}
+              setIsUploadingImage={setIsUploadingImage}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Popover open={catOpen} onOpenChange={setCatOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={catOpen}
+                  className="w-full justify-between"
+                >
+                  {categoryValue || "Select category"}
+                  <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-(--radix-popover-trigger-width) p-0"
+                align="start"
+              >
+                <Command>
+                  <CommandInput
+                    placeholder="Search category..."
+                    value={categoryValue}
+                    onValueChange={(val) => form.setValue("category_name", val)}
+                  />
+                  <CommandList>
+                    {isNewCategory && (
+                      <CommandGroup heading="New Category">
+                        <CommandItem
+                          value={categoryValue}
+                          onSelect={() => {
+                            form.setValue("category_name", categoryValue);
+                            setCatOpen(false);
+                          }}
+                          className="text-primary font-medium cursor-pointer"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create &quot;{categoryValue}&quot;
+                        </CommandItem>
+                      </CommandGroup>
+                    )}
+                    <CommandGroup>
+                      {filteredCategories?.map((cat) => (
+                        <CommandItem
+                          key={cat.id}
+                          value={cat.name}
+                          onSelect={() => {
+                            form.setValue("category_name", cat.name);
+                            setCatOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              categoryValue === cat.name
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                          {cat.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={createProduct.isPending || isUploadingImage}
+          >
+            {createProduct.isPending ? "Creating..." : "Create Product"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default DialogCreateProduct;

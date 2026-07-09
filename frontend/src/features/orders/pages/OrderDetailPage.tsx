@@ -10,11 +10,13 @@ import { useOrderDetail } from "../hooks/useOrders";
 import { STATUS_LABELS, STATUS_VARIANTS } from "../constants";
 import { formatDate } from "@/lib/format-date";
 import NotFoundOrder from "../components/NotFoundOrder";
+import { useAuthStore } from "@/store/auth-store";
+import { SYSTEM_ROLES } from "@/features/auth/types";
 
 const OrderDetailPage = () => {
   const { publicId } = useParams<{ publicId: string }>();
   const { data: order, isLoading } = useOrderDetail(publicId);
-
+  const userRole = useAuthStore((s) => s.user?.system_role);
   if (isLoading) return <Loading text="Loading order" />;
 
   if (!order) return <NotFoundOrder />;
@@ -23,7 +25,14 @@ const OrderDetailPage = () => {
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
       <div className="mb-6">
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/orders" className="gap-1">
+          <Link
+            to={
+              userRole === SYSTEM_ROLES.RESTAURANT_USER
+                ? "/restaurant/orders"
+                : "orders"
+            }
+            className="gap-1"
+          >
             <ArrowLeft className="size-4" />
             My Orders
           </Link>

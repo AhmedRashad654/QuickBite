@@ -4,7 +4,7 @@ export interface Restaurant {
     id: number;
     owner_id: number;
     name: string;
-    logo_url: string;
+    logo_url: string | null;
     status: RestaurantStatus;
     primary_country: string;
     created_at: Date;
