@@ -65,7 +65,7 @@ const SignUp = () => {
       onSuccess: ({ data }) => {
         const role = data.user?.system_role;
         if (role === SYSTEM_ROLES.RESTAURANT_USER) {
-          navigate("/restaurant", { replace: true });
+          navigate("/restaurant/orders", { replace: true });
         } else if (role === SYSTEM_ROLES.DELIVERY_AGENT) {
           navigate("/delivery", { replace: true });
         } else {

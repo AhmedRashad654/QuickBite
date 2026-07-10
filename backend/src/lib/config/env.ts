@@ -50,15 +50,15 @@ const schema = z.object({
   PAYMENT_SESSION_TIMEOUT_MIN: z.string(),
 
   // Deliveries / agents
-  ASSIGNMENT_TICK_SEC: z.string(),
-  ASSIGNMENT_BATCH: z.string(),
-  ASSIGNMENT_MAX_ATTEMPTS: z.string(),
-  ASSIGNMENT_RADIUS_METERS: z.string(),
-  ASSIGNMENT_OFFER_TTL_SEC: z.string(),
-  ASSIGNMENT_CANDIDATES: z.string(),
-  PRESENCE_STALE_SEC: z.string(),
-  ASSIGNMENT_CLAIM_TTL_SEC: z.string(),
-  AGENT_EARNING_SHARE_BPS: z.string(),
+  ASSIGNMENT_TICK_SEC: z.string().default('10'),
+  ASSIGNMENT_BATCH: z.string().default('20'),
+  ASSIGNMENT_MAX_ATTEMPTS: z.string().default('3'),
+  ASSIGNMENT_RADIUS_METERS: z.string().default('5000'),
+  ASSIGNMENT_OFFER_TTL_SEC: z.string().default('30'),
+  ASSIGNMENT_CANDIDATES: z.string().default('5'),
+  PRESENCE_STALE_SEC: z.string().default('300'),
+  ASSIGNMENT_CLAIM_TTL_SEC: z.string().default('300'),
+  AGENT_EARNING_SHARE_BPS: z.string().default('8000'),
 
   // s3 aws
   AWS_ACCESS_KEY_ID: z.string(),

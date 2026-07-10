@@ -22,7 +22,6 @@ import {
   updateMember,
   deleteMember,
   getRolePermissions,
-  getRestaurantOrders,
   updateOrderStatus,
   getBracnhOrders,
 } from "../services/restaurant-api";
@@ -328,22 +327,6 @@ export const useRolePermissions = (role: string | null) => {
   });
 };
 
-export const useRestaurantOrders = (status?: string) => {
-  const activeRestaurant = useActiveRestaurantStore(
-    (state) => state.activeRestaurant,
-  );
-  const idRestaurant = activeRestaurant?.restaurantId;
-  return useQuery({
-    queryKey: ["restaurant", idRestaurant, "orders", status],
-    queryFn: () => {
-      const params: Record<string, string> = {};
-      if (status) params["filter[status][eq]"] = status;
-      return getRestaurantOrders(idRestaurant!, params);
-    },
-    enabled: !!idRestaurant,
-  });
-};
-
 export const useBranchOrders = (status?: string) => {
   const activeBranch = useActiveRestaurantStore((state) => state.activeBranch);
   const idBranch = activeBranch?.branchId;
@@ -353,7 +336,7 @@ export const useBranchOrders = (status?: string) => {
 
     queryFn: async ({ pageParam }) => {
       const params: Record<string, string | number> = {
-        limit: 1,
+        limit: 10,
       };
 
       if (status) params["filter[status][eq]"] = status;
@@ -369,15 +352,10 @@ export const useBranchOrders = (status?: string) => {
     enabled: !!idBranch,
   });
 };
+
 export const useUpdateOrderStatus = () => {
-  const qc = useQueryClient();
-  const activeBranch = useActiveRestaurantStore((state) => state.activeBranch);
-  const idBranch = activeBranch?.branchId;
   return useMutation({
     mutationFn: ({ publicId, status }: { publicId: string; status: string }) =>
       updateOrderStatus(publicId, status),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["branch", idBranch, "orders"] });
-    },
   });
 };

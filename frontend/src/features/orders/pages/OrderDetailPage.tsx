@@ -12,13 +12,14 @@ import { formatDate } from "@/lib/format-date";
 import NotFoundOrder from "../components/NotFoundOrder";
 import { useAuthStore } from "@/store/auth-store";
 import { SYSTEM_ROLES } from "@/features/auth/types";
+import { useOrderStatusEvents } from "../hooks/useOrderSocket";
 
 const OrderDetailPage = () => {
   const { publicId } = useParams<{ publicId: string }>();
   const { data: order, isLoading } = useOrderDetail(publicId);
   const userRole = useAuthStore((s) => s.user?.system_role);
+  useOrderStatusEvents(publicId);
   if (isLoading) return <Loading text="Loading order" />;
-
   if (!order) return <NotFoundOrder />;
 
   return (
@@ -29,7 +30,7 @@ const OrderDetailPage = () => {
             to={
               userRole === SYSTEM_ROLES.RESTAURANT_USER
                 ? "/restaurant/orders"
-                : "orders"
+                : "/orders"
             }
             className="gap-1"
           >

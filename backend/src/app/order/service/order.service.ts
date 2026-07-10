@@ -156,6 +156,9 @@ export class OrderService {
     }
     if (body.payment_method === PaymentMethod.COD) {
       this.io.to(`branch:${branch.id}`).emit('order.created', OrderSummaryResponseDTO.from(order, items.length));
+      this.io
+        .to(`restaurant:${branch.restaurant_id}`)
+        .emit('order.created', OrderSummaryResponseDTO.from(order, items.length));
     }
     return OrderResponseDTO.from(order, items, paymentInfo);
   }
@@ -244,6 +247,16 @@ export class OrderService {
 
     const io = this.io;
     io.to(`branch:${order.branch_id}`).emit('order.status.updated', {
+      publicId: order.public_id,
+      status,
+    });
+
+    io.to(`customer:${order.customer_id}`).emit('order.status.updated', {
+      publicId: order.public_id,
+      status,
+    });
+
+    io.to(`restaurant:${order.restaurant_id}`).emit('order.status.updated', {
       publicId: order.public_id,
       status,
     });

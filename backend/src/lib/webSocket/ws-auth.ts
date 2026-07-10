@@ -1,4 +1,5 @@
 import { verifyAccessToken } from '../../app/auth/utils.js';
+import { MemberRole } from '../../app/rbac/enums.js';
 import { SystemRole } from '../../app/users/enums.js';
 import { JwtPayloadType } from '../types/jwtPayload.js';
 import { WsNoTokenError } from './errors.js';
@@ -17,7 +18,7 @@ export function permittedChannels(user: JwtPayloadType): Set<string> {
 
   if (user.memberships && user.memberships.length > 0) {
     for (const membership of user.memberships) {
-      if (membership.restaurantId) {
+      if (membership.restaurantId && membership.restaurantRole === MemberRole.OWNER) {
         allowed.add(`restaurant:${membership.restaurantId}`);
       }
       for (const branchId of membership.branchIds ?? []) {

@@ -27,7 +27,7 @@ export const ProtectedRoute = ({
   if (user?.system_role === allowedRoles) return <Outlet />;
   if (user?.system_role === SYSTEM_ROLES.CUSTOMER) return <Navigate to="/" />;
   if (user?.system_role === SYSTEM_ROLES.DELIVERY_AGENT) return <Navigate to="/delivery" />;
-  if (user?.system_role === SYSTEM_ROLES.RESTAURANT_USER) return <Navigate to="/restaurant" />;
+  if (user?.system_role === SYSTEM_ROLES.RESTAURANT_USER) return <Navigate to="/restaurant/orders" />;
 
 };
 

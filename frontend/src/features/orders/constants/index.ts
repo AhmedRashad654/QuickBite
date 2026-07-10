@@ -28,7 +28,6 @@ export const STATUS_LABELS: Record<string, string> = {
 
 export const filters = [
   { label: "All", value: undefined },
-  { label: "Pending Payment", value: ORDER_STATUES.PENDING_PAYMENT },
   { label: "Placed", value: ORDER_STATUES.PLACED },
   { label: "Accepted", value: ORDER_STATUES.ACCEPTED },
   { label: "Preparing", value: ORDER_STATUES.PREPARING },
@@ -36,6 +35,7 @@ export const filters = [
   { label: "Assigned", value: ORDER_STATUES.ASSIGNED },
   { label: "Picked", value: ORDER_STATUES.PICKED },
   { label: "Delivered", value: ORDER_STATUES.DELIVERED },
+  { label: "Pending Payment", value: ORDER_STATUES.PENDING_PAYMENT },
   { label: "Cancelled", value: ORDER_STATUES.CANCELLED },
   { label: "Rejected", value: ORDER_STATUES.REJECTED },
 ];

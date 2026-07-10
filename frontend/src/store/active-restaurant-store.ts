@@ -1,4 +1,8 @@
-import type { MemberStatues, RestaurantRole, RestaurantStatues } from "@/features/restaurant/types";
+import type {
+  MemberStatues,
+  RestaurantRole,
+  RestaurantStatues,
+} from "@/features/restaurant/types";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -20,6 +24,7 @@ type ActiveRestaurantState = {
   activeBranch: ActiveBranch | null;
   setActiveRestaurant: (restaurant: ActiveRestaurant | null) => void;
   setActiveBranch: (branch: ActiveBranch | null) => void;
+  clearActiveRestaurnatAndBranch: () => void;
 };
 
 export const useActiveRestaurantStore = create<ActiveRestaurantState>()(
@@ -30,6 +35,8 @@ export const useActiveRestaurantStore = create<ActiveRestaurantState>()(
       setActiveRestaurant: (restaurant) =>
         set({ activeRestaurant: restaurant }),
       setActiveBranch: (branch) => set({ activeBranch: branch }),
+      clearActiveRestaurnatAndBranch: () =>
+        set({ activeRestaurant: null, activeBranch: null }),
     }),
     {
       name: "quickbite-active-restaurant",

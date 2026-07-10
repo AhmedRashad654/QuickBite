@@ -1,5 +1,5 @@
 import { Link, Outlet } from "react-router-dom";
-import { LogOut} from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLogout } from "@/features/auth/hooks/auth-hooks";
 
@@ -9,7 +9,7 @@ const DeliveryLayout = () => {
   return (
     <div className="min-h-dvh bg-background">
       <nav className="sticky top-0 z-50 border-b bg-card">
-        <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="text-lg font-semibold">
             QuickBite
           </Link>
@@ -27,8 +27,9 @@ const DeliveryLayout = () => {
           </div>
         </div>
       </nav>
-
-      <Outlet />
+      <main className="max-w-7xl w-full mx-auto overflow-auto p-6">
+        <Outlet />
+      </main>
     </div>
   );
 };

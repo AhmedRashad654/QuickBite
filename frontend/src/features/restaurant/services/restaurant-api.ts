@@ -176,17 +176,6 @@ export const getRolePermissions = async (role: string) => {
   return unwrap(res);
 };
 
-export const getRestaurantOrders = async (
-  restaurantId: number,
-  params?: Record<string, string>,
-) => {
-  const res = await apiClient.get<ApiResponse<OrderSummary[]>>(
-    `/orders/restaurants/${restaurantId}`,
-    { params },
-  );
-  return unwrapResponse(res);
-};
-
 export const getBracnhOrders = async (
   branchId: number,
   params?: Record<string, string | number>,

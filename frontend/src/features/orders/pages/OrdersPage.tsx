@@ -13,11 +13,14 @@ import { useCustomerOrders } from "../hooks/useOrders";
 import { currentYear, YEAR_OPTIONS } from "../constants";
 import OrderCard from "../components/OrderCard";
 import NotFoundOrders from "../components/NotFoundOrders";
+import { useCustomerOrderEvents } from "../hooks/useOrderSocket";
 
 const OrdersPage = () => {
   const [year, setYear] = useState(currentYear);
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useCustomerOrders(year);
+
+  useCustomerOrderEvents();
 
   const orders = data?.pages.flatMap((page) => page.data) ?? [];
 

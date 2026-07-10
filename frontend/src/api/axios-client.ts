@@ -19,6 +19,22 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+let refreshPromise: Promise<string> | null = null;
+export const centralRefresh = (): Promise<string> => {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = refreshToken()
+    .then((result) => {
+      useAuthStore.getState().setAccessToken(result.accessToken);
+      return result.accessToken;
+    })
+    .finally(() => {
+      refreshPromise = null;
+    });
+
+  return refreshPromise;
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -38,10 +54,7 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const response = await refreshToken();
-        const accessToken = response.accessToken;
-        console.log(accessToken, "yyy");
-        useAuthStore.getState().setAccessToken(accessToken);
+        const accessToken = await centralRefresh();
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 
         return apiClient(originalRequest);

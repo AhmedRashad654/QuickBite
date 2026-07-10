@@ -5,7 +5,14 @@ import { container } from '../../../lib/di/container.js';
 import { KashierWebhookEnvelope } from '../../../lib/payments/kashier/types.js';
 import { InvalidWebhookSignatureError, MalformedWebhookError } from '../errors.js';
 import { markWebhookProcessed, recordWebhookOrSkip } from '../repository/payment-webhook-event.repo.js';
-import { PAYMENT_PROVIDER_IDS, PaymentProviderName, PaymentSessionStatus, TransactionMethod, TransactionStatus, TransactionType } from '../enums.js';
+import {
+  PAYMENT_PROVIDER_IDS,
+  PaymentProviderName,
+  PaymentSessionStatus,
+  TransactionMethod,
+  TransactionStatus,
+  TransactionType,
+} from '../enums.js';
 import { EVENT_KASHEIR_WEBHOOK, STATUS_KASHEIR_WEBHOOK } from '../../../lib/payments/kashier/enums.js';
 import { findOrderByPublicId, updateOrderStatus } from '../../order/repository/order.repo.js';
 import { findActiveSessionByOrderId, updateSession } from '../repository/payment-session.repo.js';
@@ -31,7 +38,12 @@ export class KashierWebhookService {
     console.log('[Kashier Service] Starting processKashierWebhook...');
 
     const envelope = this.parseEnvelope(rawBody);
-    console.log('[Kashier Service] Envelope parsed successfully. Event:', envelope.event, 'TransactionID:', envelope.data?.transactionId);
+    console.log(
+      '[Kashier Service] Envelope parsed successfully. Event:',
+      envelope.event,
+      'TransactionID:',
+      envelope.data?.transactionId,
+    );
 
     if (!signatureHeader) {
       console.error('[Kashier Service Error] Missing signatureHeader!');
@@ -92,7 +104,10 @@ export class KashierWebhookService {
     const order = await findOrderByPublicId(envelope.data.merchantOrderId);
     if (!order) {
       logger.warn('kashier webhook for unknown order', { merchantOrderId: envelope.data.merchantOrderId });
-      console.error('[Kashier Reconcile Error] Order NOT FOUND in DB for merchantOrderId:', envelope.data.merchantOrderId);
+      console.error(
+        '[Kashier Reconcile Error] Order NOT FOUND in DB for merchantOrderId:',
+        envelope.data.merchantOrderId,
+      );
       return;
     }
     console.log(`[Kashier Reconcile] Order found. Internal Order ID: ${order.id}, Current Status: ${order.status}`);
@@ -107,7 +122,9 @@ export class KashierWebhookService {
       console.error('[Kashier Reconcile Error] No ACTIVE session found for Order ID:', order.id);
       return;
     }
-    console.log(`[Kashier Reconcile] Active session found. Session ID: ${session.id}, Amount: ${session.amount} ${session.currency}`);
+    console.log(
+      `[Kashier Reconcile] Active session found. Session ID: ${session.id}, Amount: ${session.amount} ${session.currency}`,
+    );
 
     console.log('[Kashier Reconcile] Starting Database Transaction (trx)...');
     const trx = await db.transaction();
@@ -158,10 +175,15 @@ export class KashierWebhookService {
 
           console.log('[Kashier Reconcile] Triggering WebSockets emits...');
           console.log(`[Kashier Ws] Emitting order.created to branch:${placed.branch_id}`);
-          this.io.to(`branch:${placed.branch_id}`).emit('order.created', OrderSummaryResponseDTO.from(placed, items.length));
+          this.io
+            .to(`branch:${placed.branch_id}`)
+            .emit('order.created', OrderSummaryResponseDTO.from(placed, items.length));
 
           console.log(`[Kashier Ws] Emitting order.status_changed to customer:${placed.customer_id}`);
-          this.io.to(`customer:${placed.customer_id}`).emit('order.status_changed', OrderStatusResponseDTO.from(placed));
+          this.io.to(`customer:${placed.customer_id}`).emit('order.status.updated', {
+            publicId: placed.public_id,
+            status: placed.status,
+          });
           return;
         }
 

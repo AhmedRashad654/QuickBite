@@ -72,6 +72,9 @@ export class AssignmentService {
     const attemptsRaw = await this.cache.get(AssignmentService.attemptsKey(order.public_id));
     const attempts = Number(attemptsRaw ?? 0);
     if (attempts >= env.delivery.maxAttempts) {
+      this.io
+        .to(`restaurant:${order.restaurant_id}`)
+        .emit('assignment.exhausted', { order_id: order.public_id, attempts });
       this.io.to(`branch:${order.branch_id}`).emit('assignment.exhausted', { order_id: order.public_id, attempts });
       return 'exhausted';
     }

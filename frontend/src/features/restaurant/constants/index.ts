@@ -1,5 +1,4 @@
 import {
-  LayoutDashboard,
   ShoppingBag,
   Package,
   Store,
@@ -9,8 +8,7 @@ import {
 } from "lucide-react";
 
 export const NAV_ITEMS = [
-  { to: "/restaurant", label: "Dashboard", icon: LayoutDashboard, end: true },
-  { to: "/restaurant/orders", label: "Orders", icon: ShoppingBag },
+  { to: "/restaurant/orders", label: "Orders", icon: ShoppingBag, end: true },
   { to: "/restaurant/products", label: "Products", icon: Package },
   { to: "/restaurant/branches", label: "Branches", icon: Store },
   { to: "/restaurant/members", label: "Members", icon: Users },
@@ -48,7 +46,6 @@ export const MEMBER_MESSAGES = {
       "Your staff account has been suspended due to administrative reasons or internal review. Please contact the business owner to reactivate your access.",
   },
 };
-
 
 export const STATUS_COLOR: Record<string, string> = {
   placed: "bg-blue-100 text-blue-700",

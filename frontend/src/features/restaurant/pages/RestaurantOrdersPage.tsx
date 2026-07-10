@@ -15,6 +15,7 @@ import { filters } from "@/features/orders/constants";
 import { useActiveRestaurantStore } from "@/store/active-restaurant-store";
 import { RESTAURANT_ROLES } from "../types";
 import { STATUS_COLOR } from "../constants";
+import { useRestaurantOrderEvents } from "@/features/orders/hooks/useOrderSocket";
 
 const RestaurantOrdersPage = () => {
   const navigate = useNavigate();
@@ -25,6 +26,15 @@ const RestaurantOrdersPage = () => {
   const activeRestaurantRole = useActiveRestaurantStore(
     (s) => s.activeRestaurant?.restaurantRole,
   );
+  const activeBranchId = useActiveRestaurantStore(
+    (s) => s.activeBranch?.branchId ?? null,
+  );
+
+  const activeRestaurantId = useActiveRestaurantStore(
+    (s) => s.activeRestaurant?.restaurantId ?? null,
+  );
+
+  useRestaurantOrderEvents(activeBranchId, activeRestaurantId);
 
   const orders = data?.pages.flatMap((page) => page.data) ?? [];
 
@@ -49,7 +59,7 @@ const RestaurantOrdersPage = () => {
 
       {isLoading ? (
         <Loader viewType="table" count={5} />
-      ) : orders.length === 0 ? (
+      ) : orders.filter((o) => !filter || o.status === filter).length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             No orders found
@@ -57,60 +67,96 @@ const RestaurantOrdersPage = () => {
         </Card>
       ) : (
         <div className="space-y-3">
-          {orders.map((order) => (
-            <Card key={order.public_id}>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div className="space-y-1">
-                  <CardTitle className="text-sm">
-                    #{order.public_id.slice(0, 8)}
-                  </CardTitle>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span>
-                      {order.currency} {(order.total / 100).toFixed(2)}
-                    </span>
-                    <span>•</span>
-                    <span>{order.items_count} items</span>
+          {orders
+            .filter((o) => !filter || o.status === filter)
+            .map((order) => (
+              <Card key={order.public_id}>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div className="space-y-1">
+                    <CardTitle className="text-sm">
+                      #{order.public_id.slice(0, 8)}
+                    </CardTitle>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>
+                        {order.currency} {(order.total / 100).toFixed(2)}
+                      </span>
+                      <span>•</span>
+                      <span>{order.items_count} items</span>
+                    </div>
                   </div>
-                </div>
-                <Badge
-                  className={STATUS_COLOR[order.status] ?? ""}
-                  variant="outline"
-                >
-                  {order.status}
-                </Badge>
-              </CardHeader>
-              <CardContent className="flex gap-2">
-                {order.status === "placed" && (
-                  <>
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        updateStatus.mutate({
-                          publicId: order.public_id,
-                          status: ORDER_STATUES.ACCEPTED,
-                        })
-                      }
-                      disabled={updateStatus.isPending}
-                    >
-                      <Check /> Accept
-                    </Button>
-                    {(activeRestaurantRole === RESTAURANT_ROLES.OWNER ||
-                      activeRestaurantRole ===
-                        RESTAURANT_ROLES.BRANCH_MANAGER) && (
-                      <>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() =>
-                            updateStatus.mutate({
-                              publicId: order.public_id,
-                              status: ORDER_STATUES.REJECTED,
-                            })
-                          }
-                          disabled={updateStatus.isPending}
-                        >
-                          <X /> Reject
-                        </Button>
+                  <Badge
+                    className={STATUS_COLOR[order.status] ?? ""}
+                    variant="outline"
+                  >
+                    {order.status}
+                  </Badge>
+                </CardHeader>
+                <CardContent className="flex gap-2">
+                  {order.status === "placed" && (
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          updateStatus.mutate({
+                            publicId: order.public_id,
+                            status: ORDER_STATUES.ACCEPTED,
+                          })
+                        }
+                        disabled={updateStatus.isPending}
+                      >
+                        <Check /> Accept
+                      </Button>
+                      {(activeRestaurantRole === RESTAURANT_ROLES.OWNER ||
+                        activeRestaurantRole ===
+                          RESTAURANT_ROLES.BRANCH_MANAGER) && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() =>
+                              updateStatus.mutate({
+                                publicId: order.public_id,
+                                status: ORDER_STATUES.REJECTED,
+                              })
+                            }
+                            disabled={updateStatus.isPending}
+                          >
+                            <X /> Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() =>
+                              updateStatus.mutate({
+                                publicId: order.public_id,
+                                status: ORDER_STATUES.CANCELLED,
+                              })
+                            }
+                            disabled={updateStatus.isPending}
+                          >
+                            <X /> Cancelled
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
+                  {order.status === "accepted" && (
+                    <>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          updateStatus.mutate({
+                            publicId: order.public_id,
+                            status: ORDER_STATUES.PREPARING,
+                          })
+                        }
+                        disabled={updateStatus.isPending}
+                      >
+                        <CookingPot /> Start Preparing
+                      </Button>
+                      {(activeRestaurantRole === RESTAURANT_ROLES.OWNER ||
+                        activeRestaurantRole ===
+                          RESTAURANT_ROLES.BRANCH_MANAGER) && (
                         <Button
                           size="sm"
                           variant="secondary"
@@ -124,69 +170,35 @@ const RestaurantOrdersPage = () => {
                         >
                           <X /> Cancelled
                         </Button>
-                      </>
-                    )}
-                  </>
-                )}
-                {order.status === "accepted" && (
-                  <>
+                      )}
+                    </>
+                  )}
+                  {order.status === "preparing" && (
                     <Button
                       size="sm"
                       onClick={() =>
                         updateStatus.mutate({
                           publicId: order.public_id,
-                          status: ORDER_STATUES.PREPARING,
+                          status: ORDER_STATUES.READY,
                         })
                       }
                       disabled={updateStatus.isPending}
                     >
-                      <CookingPot /> Start Preparing
+                      <Package /> Mark Ready
                     </Button>
-                    {(activeRestaurantRole === RESTAURANT_ROLES.OWNER ||
-                      activeRestaurantRole ===
-                        RESTAURANT_ROLES.BRANCH_MANAGER) && (
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() =>
-                          updateStatus.mutate({
-                            publicId: order.public_id,
-                            status: ORDER_STATUES.CANCELLED,
-                          })
-                        }
-                        disabled={updateStatus.isPending}
-                      >
-                        <X /> Cancelled
-                      </Button>
-                    )}
-                  </>
-                )}
-                {order.status === "preparing" && (
+                  )}
                   <Button
                     size="sm"
+                    variant="outline"
                     onClick={() =>
-                      updateStatus.mutate({
-                        publicId: order.public_id,
-                        status: ORDER_STATUES.READY,
-                      })
+                      navigate(`/restaurant/orders/${order.public_id}`)
                     }
-                    disabled={updateStatus.isPending}
                   >
-                    <Package /> Mark Ready
+                    View
                   </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    navigate(`/restaurant/orders/${order.public_id}`)
-                  }
-                >
-                  View
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            ))}
 
           {hasNextPage && (
             <div className="flex justify-center">

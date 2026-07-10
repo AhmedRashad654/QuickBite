@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, LogIn } from "lucide-react";
 import { Controller, useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Field,
@@ -12,10 +12,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { loginSchema, type LoginFormValues } from "../schemas";
 import { useLogin } from "../hooks/auth-hooks";
-import { SYSTEM_ROLES } from "../types";
 
 const SignIn = () => {
-  const navigate = useNavigate();
   const loginMutation = useLogin();
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -26,18 +24,7 @@ const SignIn = () => {
   });
 
   const onSubmit = (values: LoginFormValues) => {
-    loginMutation.mutate(values, {
-      onSuccess: ({ data }) => {
-        const role = data.user?.system_role;
-        if (role === SYSTEM_ROLES.RESTAURANT_USER) {
-          navigate("/restaurant", { replace: true });
-        } else if (role === SYSTEM_ROLES.DELIVERY_AGENT) {
-          navigate("/delivery", { replace: true });
-        } else {
-          navigate("/", { replace: true });
-        }
-      },
-    });
+    loginMutation.mutate(values);
   };
 
   return (
@@ -68,7 +55,9 @@ const SignIn = () => {
                   autoComplete="email"
                   aria-invalid={fieldState.invalid}
                 />
-                {fieldState.invalid ? <FieldError errors={[fieldState.error]} /> : null}
+                {fieldState.invalid ? (
+                  <FieldError errors={[fieldState.error]} />
+                ) : null}
               </Field>
             )}
           />
@@ -86,7 +75,9 @@ const SignIn = () => {
                   autoComplete="current-password"
                   aria-invalid={fieldState.invalid}
                 />
-                {fieldState.invalid ? <FieldError errors={[fieldState.error]} /> : null}
+                {fieldState.invalid ? (
+                  <FieldError errors={[fieldState.error]} />
+                ) : null}
               </Field>
             )}
           />
@@ -106,7 +97,11 @@ const SignIn = () => {
             type="submit"
             disabled={loginMutation.isPending}
           >
-            {loginMutation.isPending ? <Loader2 className="animate-spin" /> : <LogIn />}
+            {loginMutation.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <LogIn />
+            )}
             Sign in
           </Button>
         </FieldGroup>
@@ -114,7 +109,10 @@ const SignIn = () => {
 
       <p className="mt-6 text-center text-sm text-muted-foreground">
         New to QuickBite?{" "}
-        <Link className="font-medium text-foreground underline-offset-4 hover:underline" to="/auth/sign-up">
+        <Link
+          className="font-medium text-foreground underline-offset-4 hover:underline"
+          to="/auth/sign-up"
+        >
           Create an account
         </Link>
       </p>

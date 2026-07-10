@@ -26,9 +26,7 @@ const OrderDetailPage = lazy(
   () => import("@/features/orders/pages/OrderDetailPage"),
 );
 const Delivery = lazy(() => import("@/features/delivery/pages/Delivery"));
-const RestaurantDashboard = lazy(
-  () => import("@/features/restaurant/pages/Restaurant"),
-);
+
 const RestaurantOrdersPage = lazy(
   () => import("@/features/restaurant/pages/RestaurantOrdersPage"),
 );
@@ -123,7 +121,10 @@ const Routes = () => {
         {
           element: <RestaurantLayout />,
           children: [
-            { index: true, element: <RestaurantDashboard /> },
+            {
+              index: true,
+              element: <Navigate to="orders" replace />,
+            },
             { path: "orders", element: <RestaurantOrdersPage /> },
             { path: "orders/:publicId", element: <OrderDetailPage /> },
             { path: "products", element: <RestaurantProductsPage /> },
