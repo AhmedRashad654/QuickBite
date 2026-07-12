@@ -20,6 +20,7 @@ export type AuthUser = {
   system_role?: SystemRole;
   created_at?: string;
   updated_at?: string;
+  isOnlineInRedis: boolean;
   memberships: AuthMembership[];
 };
 

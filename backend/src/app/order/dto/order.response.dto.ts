@@ -28,6 +28,7 @@ export class OrderSummaryResponseDTO {
   currency!: string;
   items_count!: number;
   restaurant!: { id: number };
+  order_type!: OrderType;
   branch_id!: number;
   created_at!: string;
 
@@ -37,6 +38,7 @@ export class OrderSummaryResponseDTO {
     dto.status = order.status;
     dto.total = order.total;
     dto.currency = order.currency;
+    dto.order_type = order.order_type;
     dto.items_count = itemsCount;
     dto.restaurant = { id: Number(order.restaurant_id) };
     dto.branch_id = Number(order.branch_id);

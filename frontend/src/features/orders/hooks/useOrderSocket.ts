@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth-store";
 import { ensureSocket } from "@/api/socket";
@@ -7,7 +7,6 @@ import type { OrderSummary } from "../types";
 import { useActiveRestaurantStore } from "@/store/active-restaurant-store";
 import { RESTAURANT_ROLES } from "@/features/restaurant/types";
 import { SYSTEM_ROLES } from "@/features/auth/types";
-import { centralRefresh } from "@/api/axios-client";
 
 interface StatusPayload {
   publicId: string;
@@ -22,7 +21,11 @@ const handleConnectError = async (err: Error) => {
     isRefreshing = true;
 
     try {
+      const { centralRefresh } = await import("@/api/axios-client");
+      const { destroySocket } = await import("@/api/socket");
       const accessToken = await centralRefresh();
+
+      destroySocket();
       ensureSocket(accessToken);
     } catch {
       useAuthStore.getState().clearSession();
@@ -58,15 +61,6 @@ export function useRestaurantOrderEvents(
     (s) => s.activeRestaurant?.restaurantRole,
   );
   const token = useAuthStore((s) => s.accessToken);
-
-  const channel = useMemo(() => {
-    if (roleActiveRestaurant === RESTAURANT_ROLES.OWNER && restaurantId) {
-      return `restaurant:${restaurantId}`;
-    }
-    if (branchId) return `branch:${branchId}`;
-    return null;
-  }, [roleActiveRestaurant, restaurantId, branchId]);
-
   useEffect(() => {
     if (!branchId || !token) return;
 
@@ -94,10 +88,18 @@ export function useRestaurantOrderEvents(
       );
     };
 
+    const handleOrderExhausted = (payload: StatusPayload) => {
+      queryClient.setQueriesData<InfiniteData<OrdersPage>>(
+        { queryKey: ["branch", branchId, "orders"] },
+        (oldData) => patchStatus(oldData, payload.publicId, payload.status),
+      );
+    };
+
     socket.on("connect", handleConnect);
     socket.on("connect_error", handleConnectError);
     socket.on("order.created", handleOrderCreated);
     socket.on("order.status.updated", handleStatusUpdated);
+    socket.on("assignment.exhausted", handleOrderExhausted);
 
     if (socket.connected) {
       socket.emit("subscribe", channel);
@@ -109,9 +111,9 @@ export function useRestaurantOrderEvents(
       socket.off("connect_error", handleConnectError);
       socket.off("order.created", handleOrderCreated);
       socket.off("order.status.updated", handleStatusUpdated);
+      socket.off("assignment.exhausted", handleOrderExhausted);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, queryClient, channel]);
+  }, [token, queryClient, branchId, roleActiveRestaurant, restaurantId]);
 }
 
 export function useCustomerOrderEvents() {

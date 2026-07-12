@@ -12,12 +12,14 @@ import { insertEarning } from '../repository/agent-earning.repo.js';
 import { createTransactionIdempotent } from '../../payment/repository/transaction.repo.js';
 import { TransactionMethod, TransactionStatus, TransactionType } from '../../payment/enums.js';
 import { NotYourTaskError } from '../errors.js';
+import { AppError } from '../../../lib/error/AppError.js';
 import { findBranchById } from '../../branch/repository/branch.repo.js';
 import { logger } from '../../../lib/logger/logger.js';
 import { Order } from '../../order/types.js';
 import { db } from '../../../lib/knex/knex.js';
 import { upsertIncrement } from '../../finance/repository/restaurant-balance.repo.js';
 import { env } from '../../../lib/config/env.js';
+import { OrderNotFoundError } from '../../order/errors.js';
 
 @injectable()
 export class SettlementService {
@@ -31,11 +33,10 @@ export class SettlementService {
   }
 
   async settleDelivered(publicId: string, agentId: number): Promise<Order> {
-
     // Pre-trx fetch (read-only) so we can pull commissionBps from core's cache
     // without holding row locks across an HTTP call.
     const order = await findOrderByPublicId(publicId);
-    if (!order) throw new Error('OrderNotFound');
+    if (!order) throw OrderNotFoundError;
     if (order.delivery_agent_id !== agentId) throw NotYourTaskError;
 
     // Branch fetch is cached in core's read-through; failure => commission stays 0.
@@ -167,7 +168,6 @@ export class SettlementService {
       // Finally flip status to delivered.
       updated = await updateOrderStatus(publicId, OrderStatus.DELIVERED, 'delivered_at', trx);
 
-
       await trx.commit();
     } catch (err) {
       await trx.rollback();
@@ -179,9 +179,115 @@ export class SettlementService {
     await this.cache.del(AssignmentService.claimKey(publicId));
 
     const statusDto = OrderStatusResponseDTO.from(updated);
-    this.io.to(`customer:${updated.customer_id}`).emit('order.status_changed', statusDto);
-    this.io.to(`branch:${updated.branch_id}`).emit('order.status_changed', statusDto);
+    this.io.to(`customer:${updated.customer_id}`).emit('order.status.updated', statusDto);
+    this.io.to(`branch:${updated.branch_id}`).emit('order.status.updated', statusDto);
+    this.io.to(`restaurant:${updated.restaurant_id}`).emit('order.status.updated', statusDto);
+    return updated;
+  }
 
+  async settlePickedUp(publicId: string, order: Order): Promise<Order> {
+    if (order.status !== OrderStatus.READY) {
+      throw new AppError('Order is not in ready state', 409);
+    }
+
+    let commissionBps = 0;
+    try {
+      const branch = await findBranchById(order.branch_id);
+      commissionBps = Number(branch?.commission ?? 0);
+    } catch (err) {
+      logger.warn('settlePickedUp: branch fetch failed; commission set to 0', {
+        publicId,
+        error: (err as Error).message,
+      });
+    }
+    const commission = Math.floor((order.subtotal * commissionBps) / 10000);
+
+    const trx = await db.transaction();
+    let updated: Order;
+    try {
+      await updateOrderCommission(publicId, commission, trx);
+
+      if (order.payment_method === PaymentMethod.COD) {
+        await createTransactionIdempotent(
+          {
+            order_id: order.id,
+            transaction_type: TransactionType.COD_COLLECTION,
+            method: TransactionMethod.COD,
+            provider_id: null,
+            provider_reference_id: null,
+            status: TransactionStatus.SUCCEEDED,
+            amount: order.total,
+            currency: order.currency,
+            src_acc_id: order.customer_id,
+            dst_acc_id: order.restaurant_owner_id,
+            idempotency_key: `cod-collect:${order.public_id}`,
+          },
+          trx,
+        );
+      }
+
+      if (commission > 0) {
+        await createTransactionIdempotent(
+          {
+            order_id: order.id,
+            transaction_type: TransactionType.COMMISSION,
+            method: TransactionMethod.SYSTEM,
+            provider_id: null,
+            provider_reference_id: null,
+            status: TransactionStatus.SUCCEEDED,
+            amount: commission,
+            currency: order.currency,
+            src_acc_id: order.restaurant_owner_id,
+            dst_acc_id: null,
+            idempotency_key: `commission:${order.public_id}`,
+          },
+          trx,
+        );
+      }
+
+      if (order.service_fee > 0) {
+        await createTransactionIdempotent(
+          {
+            order_id: order.id,
+            transaction_type: TransactionType.ADJUSTMENT,
+            method: TransactionMethod.SYSTEM,
+            provider_id: null,
+            provider_reference_id: null,
+            status: TransactionStatus.SUCCEEDED,
+            amount: order.service_fee,
+            currency: order.currency,
+            src_acc_id: order.restaurant_owner_id,
+            dst_acc_id: null,
+            idempotency_key: `service-fee:${order.public_id}`,
+          },
+          trx,
+        );
+      }
+
+      const netToRestaurant = order.subtotal - commission;
+      if (netToRestaurant !== 0) {
+        await upsertIncrement(
+          {
+            restaurant_id: order.restaurant_id,
+            currency: order.currency,
+            delta: netToRestaurant,
+          },
+          trx,
+        );
+      }
+
+      updated = await updateOrderStatus(publicId, OrderStatus.DELIVERED, 'delivered_at', trx);
+
+      await trx.commit();
+    } catch (err) {
+      await trx.rollback();
+      throw err;
+    }
+
+    const statusDto = OrderStatusResponseDTO.from(updated);
+    this.io.to(`customer:${updated.customer_id}`).emit('order.status.updated', statusDto);
+    this.io.to(`branch:${updated.branch_id}`).emit('order.status.updated', statusDto);
+    this.io.to(`restaurant:${updated.restaurant_id}`).emit('order.status.updated', statusDto);
     return updated;
   }
 }

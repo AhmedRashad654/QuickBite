@@ -27,17 +27,17 @@ export class AgentController {
 
   offline = async (req: Request, res: Response) => {
     await this.presence.goOffline(req.user!.userId);
-    sendSuccess(res, { ok: true });
+    sendSuccess(res, { ok: true }, 'you are offline');
   };
 
   accept = async (req: Request, res: Response) => {
     const dto = await this.agent.accept(String(req.params.publicId), req.user!.userId);
-    sendSuccess(res, dto);
+    sendSuccess(res, dto, 'Order accepted!');
   };
 
   reject = async (req: Request, res: Response) => {
     await this.agent.reject(String(req.params.publicId), req.user!.userId);
-    sendSuccess(res, { ok: true });
+    sendSuccess(res, { ok: true }, 'Order rejected!');
   };
 
   /** Body: { status: 'picked' | 'delivered' } */
@@ -47,7 +47,8 @@ export class AgentController {
       return res.status(400).json({ error: "status must be 'picked' or 'delivered'" });
     }
     const dto = await this.agent.transition(String(req.params.publicId), req.user!.userId, target);
-    sendSuccess(res, dto);
+    const message = target === OrderStatus.PICKED ? 'Order picked up!' : 'Order delivered! Earning recorded.';
+    sendSuccess(res, dto, message);
   };
 
   tasks = async (req: Request, res: Response) => {

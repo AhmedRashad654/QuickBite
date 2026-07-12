@@ -2,7 +2,7 @@ import { Knex } from 'knex';
 import { RestaurantBalance } from '../types.js';
 import { db } from '../../../lib/knex/knex.js';
 
-const COLUMNS = ['restaurant_id', 'region', 'currency', 'balance', 'updated_at'] as const;
+const COLUMNS = ['restaurant_id','currency', 'balance', 'updated_at'] as const;
 
 export async function findByRestaurant(restaurantId: number, conn: Knex = db): Promise<RestaurantBalance[]> {
   const rows = await conn('restaurant_balances')
@@ -35,8 +35,8 @@ export async function upsertIncrement(
 ): Promise<RestaurantBalance> {
   const [row] = await conn
     .raw(
-      `INSERT INTO restaurant_balances (restaurant_id, region, currency, balance, updated_at)
-         VALUES (?, ?, ?, ?, NOW())
+      `INSERT INTO restaurant_balances (restaurant_id, currency, balance, updated_at)
+         VALUES (?, ?, ?, NOW())
          ON CONFLICT (restaurant_id, currency)
          DO UPDATE SET balance = restaurant_balances.balance + EXCLUDED.balance,
                        updated_at = NOW()

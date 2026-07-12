@@ -26,7 +26,7 @@ export async function up(knex: Knex): Promise<void> {
 
             order_type            TEXT NOT NULL CHECK (order_type IN ('delivery','pickup')),
             status                TEXT NOT NULL CHECK (status IN (
-                                      'pending_payment','placed','accepted','rejected',
+                                      'pending_payment','placed','accepted','rejected','exhausted',
                                       'preparing','ready','assigned','picked','delivered','cancelled'
                                   )),
 

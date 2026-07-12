@@ -20,4 +20,10 @@ export class UsersController {
     const user = await this.userService.updateProfile(req.user?.userId!, data);
     sendSuccess(res, user,'Profile updated');
   };
+
+  searchDeliveryAgents = async (req: Request, res: Response) => {
+    const query = String(req.query.q ?? '').trim();
+    const agents = await this.userService.searchDeliveryAgents(query);
+    sendSuccess(res, agents);
+  };
 }

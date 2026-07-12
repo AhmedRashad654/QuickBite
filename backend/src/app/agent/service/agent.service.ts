@@ -12,8 +12,9 @@ import { db } from '../../../lib/knex/knex.js';
 import { OrderStatusResponseDTO } from '../../order/dto/order.response.dto.js';
 import { listByAgent, sumByAgent } from '../repository/agent-earning.repo.js';
 import { SettlementService } from './settlement.service.js';
+import { AppError } from '../../../lib/error/AppError.js';
 
-const TASK_LIST_LIMIT = 50;
+const TASK_LIST_LIMIT = 20;
 
 @injectable()
 export class AgentService {
@@ -35,11 +36,7 @@ export class AgentService {
   }
 
   /** picked / delivered transitions for the assigned agent. */
-  async transition(
-    publicId: string,
-    agentId: number,
-    target: OrderStatus,
-  ): Promise<DeliveryTaskResponseDTO> {
+  async transition(publicId: string, agentId: number, target: OrderStatus): Promise<DeliveryTaskResponseDTO> {
     if (target === OrderStatus.DELIVERED) {
       const updated = await this.settlement.settleDelivered(publicId, agentId);
       const branch = await findBranchById(updated.branch_id).catch(() => null);
@@ -65,19 +62,25 @@ export class AgentService {
       throw err;
     }
     const statusDto = OrderStatusResponseDTO.from(updated);
-    this.io.to(`customer:${updated.customer_id}`).emit('order.status_changed', statusDto);
-    this.io.to(`branch:${updated.branch_id}`).emit('order.status_changed', statusDto);
+    this.io.to(`customer:${updated.customer_id}`).emit('order.status.updated', statusDto);
+    this.io.to(`branch:${updated.branch_id}`).emit('order.status.updated', statusDto);
+    this.io.to(`restaurant:${updated.restaurant_id}`).emit('order.status.updated', statusDto);
     const branch = await findBranchById(updated.branch_id).catch(() => null);
     return DeliveryTaskResponseDTO.from(updated, branch ?? undefined);
   }
 
   async listTasks(agentId: number, statusFilter?: string): Promise<DeliveryTaskResponseDTO[]> {
+    if (statusFilter && statusFilter !== OrderStatus.DELIVERED) {
+      throw new AppError('status filter unavailable for agent', 409);
+    }
     const statuses = statusFilter ? [statusFilter] : [OrderStatus.ASSIGNED, OrderStatus.PICKED];
     const orders = await findAgentTasks(agentId, statuses, TASK_LIST_LIMIT);
+    console.log(orders, 'orde');
     // Single batch lookup for branch enrichment — at most one network
     // round-trip regardless of how many unique branches the agent has
     // tasks at. Cache hits per branch are also served from this call.
     const branchs = await findBranchsByIds(orders.map((o) => o.branch_id));
+    console.log(branchs, 'br');
     const enriched = new Map<number, { lat: number; lng: number; name: string; addressText: string }>();
     for (const b of branchs) {
       enriched.set(b.id, { lat: b.lat, lng: b.lng, name: b.label, addressText: b.address_text });

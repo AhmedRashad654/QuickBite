@@ -4,6 +4,7 @@ import { unwrap, unwrapResponse } from "@/features/auth/services/auth-api";
 import type {
   Branch,
   BranchProduct,
+  DeliveryAgent,
   ProductCategory,
   RestaurantInfo,
   RestaurantMember,
@@ -191,5 +192,28 @@ export const updateOrderStatus = async (publicId: string, status: string) => {
   const res = await apiClient.patch<
     ApiResponse<{ publicId: string; status: string }>
   >(`/orders/${publicId}/status`, { status });
+  return unwrap(res);
+};
+
+export const searchDeliveryAgents = async (query: string) => {
+  const res = await apiClient.get<ApiResponse<DeliveryAgent[]>>(
+    `/user/delivery-agents`,
+    { params: { q: query } },
+  );
+  return unwrapResponse(res);
+};
+
+export const assignOrderExhausted = async (publicId: string, agentId: number) => {
+  const res = await apiClient.post<ApiResponse<unknown>>(
+    `/assignment/orders/${publicId}/assign`,
+    { agentId },
+  );
+  return unwrap(res);
+};
+
+export const completeOrder = async (publicId: string) => {
+  const res = await apiClient.post<ApiResponse<unknown>>(
+    `/assignment/orders/${publicId}/complete`,
+  );
   return unwrap(res);
 };

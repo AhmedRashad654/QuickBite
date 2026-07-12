@@ -2,7 +2,7 @@ import { Knex } from 'knex';
 import { AgentEarning, EarningsRange, InsertAgentEarningInput } from '../types.js';
 import { db } from '../../../lib/knex/knex.js';
 
-const AGENT_EARNING_COLUMNS = ['id', 'region', 'agent_id', 'order_id', 'amount', 'currency', 'earned_at'] as const;
+const AGENT_EARNING_COLUMNS = ['id', 'agent_id', 'order_id', 'amount', 'currency', 'earned_at'] as const;
 
 export async function insertEarning(input: InsertAgentEarningInput, conn: Knex = db): Promise<AgentEarning | null> {
   const [row] = await conn('agent_earnings')

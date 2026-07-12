@@ -20,7 +20,7 @@ import { db } from '../../../lib/knex/knex.js';
 import { createTransaction } from '../repository/transaction.repo.js';
 import { OrderStatus } from '../../order/enums.js';
 import { findItemsByOrderIds } from '../../order/repository/order-item.repo.js';
-import { OrderStatusResponseDTO, OrderSummaryResponseDTO } from '../../order/dto/order.response.dto.js';
+import { OrderSummaryResponseDTO } from '../../order/dto/order.response.dto.js';
 import { logger } from '../../../lib/logger/logger.js';
 import { kashierClient } from '../../../lib/payments/kashier/kashier.client.js';
 

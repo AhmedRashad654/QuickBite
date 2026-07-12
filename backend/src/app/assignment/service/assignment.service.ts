@@ -5,6 +5,7 @@ import {
   claimReadyOrderForAgent,
   findOrderByPublicId,
   findReadyUnassigned,
+  updateOrderStatus,
 } from '../../order/repository/order.repo.js';
 import { logger } from '../../../lib/logger/logger.js';
 import { Order } from '../../order/types.js';
@@ -23,6 +24,7 @@ import { DeliveryTaskResponseDTO } from '../../agent/dto/agent.response.dto.js';
 import { db } from '../../../lib/knex/knex.js';
 import { OrderStatusResponseDTO } from '../../order/dto/order.response.dto.js';
 import { env } from '../../../lib/config/env.js';
+import { OrderStatus } from '../../order/enums.js';
 
 @injectable()
 export class AssignmentService {
@@ -47,7 +49,11 @@ export class AssignmentService {
   }
 
   async tickRegion(): Promise<{ processed: number; offered: number; skipped: number }> {
-    const orders = await findReadyUnassigned(env.delivery.batch);
+    const activeOfferKeys = await this.cache.keys('assignment:offer:*');
+    console.log(activeOfferKeys, 'active offer keys');
+    const excludedOrderIds = activeOfferKeys.map((key) => key.split(':').pop()).filter((id): id is string => !!id);
+    const orders = await findReadyUnassigned(env.delivery.batch, excludedOrderIds);
+    console.log(orders, 'orders on  unassigned');
     let offered = 0;
     let skipped = 0;
     for (const o of orders) {
@@ -72,10 +78,11 @@ export class AssignmentService {
     const attemptsRaw = await this.cache.get(AssignmentService.attemptsKey(order.public_id));
     const attempts = Number(attemptsRaw ?? 0);
     if (attempts >= env.delivery.maxAttempts) {
-      this.io
-        .to(`restaurant:${order.restaurant_id}`)
-        .emit('assignment.exhausted', { order_id: order.public_id, attempts });
-      this.io.to(`branch:${order.branch_id}`).emit('assignment.exhausted', { order_id: order.public_id, attempts });
+      console.log('here order 3 stemppes');
+      const updated = await updateOrderStatus(order.public_id, OrderStatus.EXHAUSTED, null);
+      const statusDto = OrderStatusResponseDTO.from(updated);
+      this.io.to(`branch:${order.branch_id}`).emit('order.status.updated', statusDto);
+      this.io.to(`restaurant:${order.restaurant_id}`).emit('order.status.updated', statusDto);
       return 'exhausted';
     }
 
@@ -171,9 +178,9 @@ export class AssignmentService {
     for (const loser of losers) {
       this.io.to(`agent:${loser}`).emit('offer.cancelled', { orderId: publicId, reason: 'claimed_by_other' });
     }
-    this.io.to(`customer:${updated.customer_id}`).emit('order.status_changed', statusDto);
-    this.io.to(`branch:${updated.branch_id}`).emit('order.status_changed', statusDto);
-
+    this.io.to(`customer:${updated.customer_id}`).emit('order.status.updated', statusDto);
+    this.io.to(`branch:${updated.branch_id}`).emit('order.status.updated', statusDto);
+    this.io.to(`restaurant:${updated.restaurant_id}`).emit('order.status.updated', statusDto);
     // Drop the offer marker (claim TTL keeps the lock).
     await this.cache.del(AssignmentService.offerKey(publicId));
 
@@ -200,9 +207,10 @@ export class AssignmentService {
    * the order for the specified agent regardless of distance/busy state.
    */
   async ownerAssign(publicId: string, agentId: number): Promise<DeliveryTaskResponseDTO> {
+    console.log('enter here awner assign');
     const ok = await this.cache.trySet(AssignmentService.claimKey(publicId), String(agentId), env.delivery.claimTtlSec);
     if (!ok) throw OrderAlreadyClaimedError;
-
+    console.log('after first');
     const trx = await db.transaction();
     let updated: Order;
     try {
@@ -225,8 +233,9 @@ export class AssignmentService {
     const taskDto = DeliveryTaskResponseDTO.from(updated, branch ?? undefined);
     const statusDto = OrderStatusResponseDTO.from(updated);
     this.io.to(`agent:${agentId}`).emit('task.assigned', taskDto);
-    this.io.to(`customer:${updated.customer_id}`).emit('order.status_changed', statusDto);
-    this.io.to(`branch:${updated.branch_id}`).emit('order.status_changed', statusDto);
+    this.io.to(`customer:${updated.customer_id}`).emit('order.status.updated', statusDto);
+    this.io.to(`branch:${updated.branch_id}`).emit('order.status.updated', statusDto);
+    this.io.to(`restaurant:${updated.restaurant_id}`).emit('order.status.updated', statusDto);
     await this.cache.del(AssignmentService.offerKey(publicId));
     return taskDto;
   }

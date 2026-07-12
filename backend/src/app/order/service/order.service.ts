@@ -244,24 +244,17 @@ export class OrderService {
     };
 
     const updated = await updateOrderStatus(order.public_id, status, stampColumnMap[status] ?? null);
-
+    const statusDto = OrderStatusResponseDTO.from(updated);
+    const res = this.getAllRoomsAndUsers();
+    console.log(res, 'res socket rooms');
     const io = this.io;
-    io.to(`branch:${order.branch_id}`).emit('order.status.updated', {
-      publicId: order.public_id,
-      status,
-    });
+    io.to(`branch:${order.branch_id}`).emit('order.status.updated', statusDto);
 
-    io.to(`customer:${order.customer_id}`).emit('order.status.updated', {
-      publicId: order.public_id,
-      status,
-    });
+    io.to(`customer:${order.customer_id}`).emit('order.status.updated', statusDto);
 
-    io.to(`restaurant:${order.restaurant_id}`).emit('order.status.updated', {
-      publicId: order.public_id,
-      status,
-    });
+    io.to(`restaurant:${order.restaurant_id}`).emit('order.status.updated', statusDto);
 
-    return OrderStatusResponseDTO.from(updated);
+    return statusDto;
   }
 
   // ── private helpers ──────────────────────────────────────────────────
@@ -359,5 +352,29 @@ export class OrderService {
       }
     }
     throw PermissionDeniedError;
+  }
+
+  private async getAllRoomsAndUsers() {
+    const rooms = this.io.sockets.adapter.rooms;
+    const result: Record<string, { totalConnections: number; userIds: string[] }> = {};
+
+    for (const [roomName, socketIdsSet] of rooms.entries()) {
+      if (socketIdsSet.has(roomName)) continue;
+
+      const userIds: string[] = [];
+
+      for (const socketId of socketIdsSet) {
+        const socket = this.io.sockets.sockets.get(socketId);
+        if (socket && socket.data.userId) {
+          userIds.push(socket.data.userId);
+        }
+      }
+
+      result[roomName] = {
+        totalConnections: socketIdsSet.size,
+        userIds: userIds,
+      };
+    }
+    return result;
   }
 }

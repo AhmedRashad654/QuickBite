@@ -9,13 +9,22 @@ export const ORDER_STATUES = {
   PICKED: "picked",
   DELIVERED: "delivered",
   CANCELLED: "cancelled",
+  EXHAUSTED: "exhausted",
 } as const;
 
 export type OrderStatues = (typeof ORDER_STATUES)[keyof typeof ORDER_STATUES];
 
+export const ORDER_TYPE = {
+  DELIVERY: "delivery",
+  PICKUP: "pickup",
+} as const;
+
+export type OrderType = (typeof ORDER_TYPE)[keyof typeof ORDER_TYPE];
+
 export interface OrderSummary {
   public_id: string;
   status: string;
+  order_type: OrderType;
   total: number;
   currency: string;
   items_count: number;

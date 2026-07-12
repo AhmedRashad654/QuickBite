@@ -34,21 +34,24 @@ const RestaurantLayout = () => {
       : null;
 
   return (
-    <div className="flex min-h-dvh">
-      <RestaurantSidebar />
-      <div className="flex flex-1 flex-col">
-        <header className="flex h-14 items-center justify-end border-b bg-card px-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
-          >
-            <LogOut />
-            Sign out
-          </Button>
-        </header>
-        <main className="max-w-7xl w-full mx-auto overflow-auto p-6">
+    <div className="flex flex-col h-screen">
+      <header className="flex h-14 items-center justify-between border-b bg-card">
+        <div className="flex h-14 items-center border-b px-4">
+          <span className="text-lg font-semibold">QuickBite</span>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => logoutMutation.mutate()}
+          disabled={logoutMutation.isPending}
+        >
+          <LogOut />
+          Sign out
+        </Button>
+      </header>
+      <main className="flex flex-1">
+        <RestaurantSidebar />
+        <div className="max-w-7xl w-full mx-auto  p-6">
           {restaurantAlert && (
             <Alert
               variant="destructive"
@@ -85,8 +88,8 @@ const RestaurantLayout = () => {
               </div>
             </div>
           )}
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 };

@@ -3,26 +3,43 @@ import { useNavigate } from "react-router-dom";
 import {
   useBranchOrders,
   useUpdateOrderStatus,
+  useCompleteOrder,
 } from "../hooks/restaurant-hooks";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, CookingPot, Package, Loader2 } from "lucide-react";
+import {
+  Check,
+  X,
+  CookingPot,
+  Package,
+  Loader2,
+  Truck,
+  CheckCircle,
+  Store,
+} from "lucide-react";
 import BranchSwitcher from "../components/BranchSwitcher";
 import { Loader } from "@/components/shared/Loader";
-import { ORDER_STATUES } from "@/features/orders/types";
+import { ORDER_STATUES, ORDER_TYPE } from "@/features/orders/types";
 import { filters } from "@/features/orders/constants";
 import { useActiveRestaurantStore } from "@/store/active-restaurant-store";
 import { RESTAURANT_ROLES } from "../types";
 import { STATUS_COLOR } from "../constants";
 import { useRestaurantOrderEvents } from "@/features/orders/hooks/useOrderSocket";
+import DialogAssignAgent from "../components/DialogAssignAgent";
+import { formatUUID } from "@/lib/format-uuid";
 
 const RestaurantOrdersPage = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<string | undefined>(undefined);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedOrderPublicId, setSelectedOrderPublicId] = useState<
+    string | null
+  >(null);
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } =
     useBranchOrders(filter);
   const updateStatus = useUpdateOrderStatus();
+  const completePickup = useCompleteOrder();
   const activeRestaurantRole = useActiveRestaurantStore(
     (s) => s.activeRestaurant?.restaurantRole,
   );
@@ -44,7 +61,7 @@ const RestaurantOrdersPage = () => {
         <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
       </div>
       <BranchSwitcher />
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         {filters.map((f) => (
           <Button
             key={f.label}
@@ -74,7 +91,7 @@ const RestaurantOrdersPage = () => {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-sm">
-                      #{order.public_id.slice(0, 8)}
+                      # {formatUUID(order.public_id)}
                     </CardTitle>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span>
@@ -91,8 +108,8 @@ const RestaurantOrdersPage = () => {
                     {order.status}
                   </Badge>
                 </CardHeader>
-                <CardContent className="flex gap-2">
-                  {order.status === "placed" && (
+                <CardContent className="flex gap-2 flex-wrap items-center">
+                  {order.status === ORDER_STATUES.PLACED && (
                     <>
                       <Button
                         size="sm"
@@ -140,7 +157,7 @@ const RestaurantOrdersPage = () => {
                       )}
                     </>
                   )}
-                  {order.status === "accepted" && (
+                  {order.status === ORDER_STATUES.ACCEPTED && (
                     <>
                       <Button
                         size="sm"
@@ -173,7 +190,7 @@ const RestaurantOrdersPage = () => {
                       )}
                     </>
                   )}
-                  {order.status === "preparing" && (
+                  {order.status === ORDER_STATUES.PREPARING && (
                     <Button
                       size="sm"
                       onClick={() =>
@@ -187,6 +204,35 @@ const RestaurantOrdersPage = () => {
                       <Package /> Mark Ready
                     </Button>
                   )}
+                  {order.status === ORDER_STATUES.EXHAUSTED &&
+                    (activeRestaurantRole === RESTAURANT_ROLES.OWNER ||
+                      activeRestaurantRole ===
+                        RESTAURANT_ROLES.BRANCH_MANAGER) && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedOrderPublicId(order.public_id);
+                          setAssignDialogOpen(true);
+                        }}
+                      >
+                        Assign Delivery
+                        <Truck />
+                      </Button>
+                    )}
+                  {order.status === ORDER_STATUES.READY &&
+                    order.order_type === ORDER_TYPE.PICKUP && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => completePickup.mutate(order.public_id)}
+                          disabled={completePickup.isPending}
+                        >
+                          <CheckCircle /> Mark Completed
+                        </Button>
+                      </>
+                    )}
                   <Button
                     size="sm"
                     variant="outline"
@@ -196,6 +242,22 @@ const RestaurantOrdersPage = () => {
                   >
                     View
                   </Button>
+                  <Badge
+                    variant="secondary"
+                    className="gap-1.5 text-xs"
+                  >
+                    {order.order_type === ORDER_TYPE.PICKUP ? (
+                      <>
+                        <Store className="size-3" />
+                        Pickup
+                      </>
+                    ) : (
+                      <>
+                        <Truck className="size-3" />
+                        Delivery
+                      </>
+                    )}
+                  </Badge>
                 </CardContent>
               </Card>
             ))}
@@ -216,6 +278,11 @@ const RestaurantOrdersPage = () => {
           )}
         </div>
       )}
+      <DialogAssignAgent
+        open={assignDialogOpen}
+        onOpenChange={setAssignDialogOpen}
+        orderPublicId={selectedOrderPublicId}
+      />
     </div>
   );
 };

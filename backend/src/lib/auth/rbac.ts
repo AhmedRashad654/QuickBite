@@ -168,6 +168,7 @@ export function injectRestaurantIdFromProduct(paramName: string = 'productId') {
 export function injectBranchIdFromOrder() {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
+      console.log('helllllllllllllllllllll');
       const { publicId } = req.params;
       if (!publicId) return res.status(400).json({ error: 'Missing order public ID' });
 

@@ -9,6 +9,7 @@ export enum OrderStatus {
   PICKED = 'picked',
   DELIVERED = 'delivered',
   CANCELLED = 'cancelled',
+  EXHAUSTED = 'exhausted',
 }
 
 export enum PaymentMethod {

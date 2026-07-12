@@ -156,3 +156,10 @@ export type Payout = {
   status: string;
   created_at: string;
 };
+
+export interface DeliveryAgent {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+}

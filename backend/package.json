@@ -6,8 +6,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "dev:all": "concurrently \"tsx watch src/server.ts\" \"tsx watch src/worker.ts\"",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:all": "pm2 start dist/server.js --name 'api-server' && pm2 start dist/worker.js --name 'queue-worker'",
     "format": "prettier --write src/**/*.ts",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
@@ -57,6 +59,7 @@
     "@types/node": "^25.9.1",
     "@typescript-eslint/eslint-plugin": "^8.60.0",
     "@typescript-eslint/parser": "^8.60.0",
+    "concurrently": "^10.0.3",
     "eslint": "^10.4.1",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.8.3",

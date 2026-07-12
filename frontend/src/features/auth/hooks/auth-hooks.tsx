@@ -11,12 +11,12 @@ import {
 import { useIdempotency } from "@/hooks/useIdempotency";
 import { type ForgotPasswordPayload } from "../types";
 import { useActiveRestaurantStore } from "@/store/active-restaurant-store";
-import { useSyncActiveRestaurant } from "./useSyncActiveRestaurant";
+import { useSyncUserSession } from "./useSyncUserSession";
 
 export const useLogin = () => {
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const setUser = useAuthStore((state) => state.setUser);
-  const syncActiveRestaurant = useSyncActiveRestaurant();
+  const syncUserSession = useSyncUserSession();
 
   return useMutation({
     mutationFn: login,
@@ -24,7 +24,7 @@ export const useLogin = () => {
       setAccessToken(data.accessToken);
       const userData = await getMe();
       setUser(userData);
-      syncActiveRestaurant(userData);
+      syncUserSession(userData);
     },
   });
 };
@@ -32,7 +32,7 @@ export const useLogin = () => {
 export const useRegister = () => {
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
   const setUser = useAuthStore((state) => state.setUser);
-  const syncActiveRestaurant = useSyncActiveRestaurant();
+  const syncUserSession = useSyncUserSession();
   return useMutation({
     mutationFn: register,
     meta: { successMessage: "Account created" },
@@ -40,7 +40,7 @@ export const useRegister = () => {
       setAccessToken(data.accessToken);
       const userData = await getMe();
       setUser(userData);
-      syncActiveRestaurant(userData);
+      syncUserSession(userData);
     },
   });
 };

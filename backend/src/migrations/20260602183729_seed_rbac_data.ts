@@ -10,11 +10,6 @@ export async function up(knex: Knex): Promise<void> {
         ON CONFLICT (name) DO NOTHING;
     `);
 
-
-
- 
- 
-
   // Insert permissions with AWS-like resource naming
   await knex.raw(`
         INSERT INTO permissions (resource, action, created_at) VALUES
@@ -81,7 +76,8 @@ export async function up(knex: Knex): Promise<void> {
             'core:orders:reject',
             'core:orders:update',
             'core:orders:cancel',
-            'core:finance:read'
+            'core:finance:read',
+            'core:deliveries:assign'
         )
         ON CONFLICT DO NOTHING;
     `);

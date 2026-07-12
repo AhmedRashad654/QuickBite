@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { useAuthStore } from "@/store/auth-store";
 import { useActiveRestaurantStore } from "@/store/active-restaurant-store";
 import { getMe, refreshToken } from "../services/auth-api";
-import { useSyncActiveRestaurant } from "../hooks/useSyncActiveRestaurant";
+import { useSyncUserSession } from "../hooks/useSyncUserSession";
 
 type AuthBootstrapProps = {
   children: ReactNode;
@@ -13,8 +13,7 @@ const AuthBootstrap = ({ children }: AuthBootstrapProps) => {
   const setUser = useAuthStore((state) => state.setUser);
   const setBootstrapped = useAuthStore((state) => state.setBootstrapped);
   const clearSession = useAuthStore((state) => state.clearSession);
-  const syncActiveRestaurant = useSyncActiveRestaurant();
-  const activeRestaurant = useActiveRestaurantStore.getState().activeRestaurant;
+  const syncUserSession = useSyncUserSession();
   const setActiveRestaurant = useActiveRestaurantStore(
     (state) => state.setActiveRestaurant,
   );
@@ -30,7 +29,7 @@ const AuthBootstrap = ({ children }: AuthBootstrapProps) => {
         const userData = await getMe();
         if (!isMounted) return;
         setUser(userData);
-        syncActiveRestaurant(userData);
+        syncUserSession(userData);
       } catch {
         if (isMounted) {
           clearSession();
@@ -51,10 +50,10 @@ const AuthBootstrap = ({ children }: AuthBootstrapProps) => {
   }, [
     clearSession,
     setAccessToken,
+    setActiveRestaurant,
     setBootstrapped,
     setUser,
-    activeRestaurant,
-    setActiveRestaurant,
+    syncUserSession,
   ]);
 
   return children;

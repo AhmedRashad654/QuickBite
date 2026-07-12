@@ -24,6 +24,9 @@ import {
   getRolePermissions,
   updateOrderStatus,
   getBracnhOrders,
+  searchDeliveryAgents,
+  assignOrderExhausted,
+  completeOrder,
 } from "../services/restaurant-api";
 import type { UpdateMemberPayload } from "../types";
 import type {
@@ -357,5 +360,32 @@ export const useUpdateOrderStatus = () => {
   return useMutation({
     mutationFn: ({ publicId, status }: { publicId: string; status: string }) =>
       updateOrderStatus(publicId, status),
+  });
+};
+
+export const useDeliveryAgentSearch = (query: string) => {
+  return useQuery({
+    queryKey: ["delivery-agents", query],
+    queryFn: () => searchDeliveryAgents(query),
+    enabled: query.trim().length >= 2,
+    staleTime: 30_000,
+  });
+};
+
+export const useAssignOrderExhausted = () => {
+  return useMutation({
+    mutationFn: ({
+      publicId,
+      agentId,
+    }: {
+      publicId: string;
+      agentId: number;
+    }) => assignOrderExhausted(publicId, agentId),
+  });
+};
+
+export const useCompleteOrder = () => {
+  return useMutation({
+    mutationFn: (publicId: string) => completeOrder(publicId),
   });
 };

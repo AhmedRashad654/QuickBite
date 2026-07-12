@@ -10,7 +10,7 @@ const DeliveryLayout = () => {
     <div className="min-h-dvh bg-background">
       <nav className="sticky top-0 z-50 border-b bg-card">
         <div className="mx-auto flex h-14 items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="text-lg font-semibold">
+          <Link to="/delivery" className="text-lg font-semibold">
             QuickBite
           </Link>
 
@@ -27,7 +27,7 @@ const DeliveryLayout = () => {
           </div>
         </div>
       </nav>
-      <main className="max-w-7xl w-full mx-auto overflow-auto p-6">
+      <main className="mx-auto w-full max-w-3xl overflow-auto p-6">
         <Outlet />
       </main>
     </div>

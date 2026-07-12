@@ -6,10 +6,8 @@ import { RestaurantSwitcher } from "./RestaurantSwitcher";
 const RestaurantSidebar = () => {
 
   return (
-    <aside className="flex w-60 flex-col border-r bg-card">
-      <div className="flex h-14 items-center border-b px-4">
-        <span className="text-lg font-semibold">QuickBite</span>
-      </div>
+    <aside className="hidden lg:flex w-60 flex-col border-r bg-card min-h-full">
+
       <div className="px-3 pt-3">
         <RestaurantSwitcher />
       </div>

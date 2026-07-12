@@ -1,17 +1,21 @@
 import { Knex } from 'knex';
 import { UpdateUserDTO } from '../dto/users.dto.js';
 import { UserNotFoundError } from '../error.js';
-import { createUser, findUserById, updateUser } from '../repository/users.repo.js';
+import { createUser, findUserById, searchDeliveryAgents, updateUser } from '../repository/users.repo.js';
 import { CreateUserData, User } from '../types.js';
 import { hashPassword } from '../../auth/utils.js';
-import { injectable } from 'tsyringe';
+import { inject, injectable } from 'tsyringe';
 import { findRestaurantsWithRole } from '../../rbac/repository/restaurant_member.repo.js';
 import { findBranchIdsByMemberId } from '../../rbac/repository/member-branch.repo.js';
 import { SystemRole } from '../enums.js';
 import { RestaurantMembership, ResultRestaurantsWithRole } from '../../rbac/type.js';
+import { TOKENS } from '../../../lib/di/tokens.js';
+import { ICacheProvider } from '../../../lib/cache/cache.interface.js';
+import { PresenceService } from '../../agent/service/presence.service.js';
 
 @injectable()
 export class UserService {
+  constructor(@inject(TOKENS.CacheProvider) private readonly cache: ICacheProvider) {}
   create = async (data: CreateUserData, trx?: Knex | Knex.Transaction): Promise<User> => {
     const hashedPassword = data.password ? await hashPassword(data.password) : '';
     return createUser(
@@ -44,13 +48,17 @@ export class UserService {
             restaurantName: row.restaurant_name,
             restaurantRole: row.role_name,
             stautsMember: row.stauts_member,
-            restaurantStatus:row.restaurant_status,
+            restaurantStatus: row.restaurant_status,
             branchIds: branchIds,
           };
         }),
       );
     }
 
+    let isOnlineInRedis = false;
+    if (user.system_role === SystemRole.DELIVERY_AGENT) {
+      if (await this.cache.exists(PresenceService.metaKey(user.id))) isOnlineInRedis = true;
+    }
     return {
       id: user.id,
       email: user.email,
@@ -59,6 +67,7 @@ export class UserService {
       system_role: user.system_role,
       created_at: user.created_at,
       updated_at: user.updated_at,
+      isOnlineInRedis,
       memberships,
     };
   };
@@ -76,5 +85,9 @@ export class UserService {
       phone: updated.phone,
       system_role: updated.system_role,
     };
+  };
+
+  searchDeliveryAgents = async (query: string) => {
+    return searchDeliveryAgents(query);
   };
 }

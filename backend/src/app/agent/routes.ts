@@ -17,14 +17,8 @@ agentRouter.post('/presence/ping', authenticate, requireAgent, ctrl.presenceUpse
 agentRouter.post('/presence/offline', authenticate, requireAgent, ctrl.offline);
 
 // Offers
-agentRouter.post(
-  '/orders/:publicId/accept',
-  authenticate,
-  requireAgent,
-  idempotency({ strict: true }),
-  ctrl.accept,
-);
-agentRouter.post('/agents/orders/:publicId/reject', authenticate, requireAgent, ctrl.reject);
+agentRouter.post('/orders/:publicId/accept', authenticate, requireAgent, idempotency({ strict: true }), ctrl.accept);
+agentRouter.post('/orders/:publicId/reject', authenticate, requireAgent, ctrl.reject);
 
 // In-flight transitions (picked / delivered)
 agentRouter.patch(

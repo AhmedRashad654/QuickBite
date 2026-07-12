@@ -1,49 +1,134 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bike, Package } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Wifi, WifiOff } from "lucide-react";
+import { usePresence } from "../hooks/usePresence";
+import { useAgentTasks } from "../hooks/useAgentTasks";
+import { useAgentSocket, playOfferSound } from "../hooks/useAgentSocket";
+import { DeliveryOfferBanner } from "../components/DeliveryOfferBanner";
+import { DeliveryActiveTask } from "../components/DeliveryActiveTask";
+import { DeliveryTaskCard } from "../components/DeliveryTaskCard";
+import { DeliveryEarnings } from "../components/DeliveryEarnings";
+import { DELIVERY_TABS, type DeliveryTab } from "../constants";
+import type { DeliveryOffer } from "../types";
 
 const Delivery = () => {
+  const { isOnline, becomeOnline, becomeOffline, tryOnlineAndOfflineLoading } =
+    usePresence();
+  const [activeTab, setActiveTab] = useState<DeliveryTab>(DELIVERY_TABS.ACTIVE);
+  const [currentOffer, setCurrentOffer] = useState<DeliveryOffer | null>(null);
+
+  const { data: tasks, isLoading } = useAgentTasks(activeTab);
+
+  const handleOffer = useCallback((offer: DeliveryOffer) => {
+    setCurrentOffer(offer);
+    playOfferSound();
+  }, []);
+
+  useAgentSocket(handleOffer);
+
   return (
-    <div className="space-y-6 p-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Delivery Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Your delivery tasks and status
-        </p>
+    <div className="space-y-6 p-4 sm:p-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Delivery Dashboard
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {isOnline
+              ? "You are online and receiving tasks"
+              : "Go online to start receiving tasks"}
+          </p>
+        </div>
+        <Button
+          variant={isOnline ? "destructive" : "default"}
+          onClick={isOnline ? becomeOffline : becomeOnline}
+          disabled={tryOnlineAndOfflineLoading}
+          size="lg"
+        >
+          {tryOnlineAndOfflineLoading ? (
+            "Loading..."
+          ) : isOnline ? (
+            <>
+              <WifiOff className="mr-2 size-4" />
+              Go Offline
+            </>
+          ) : (
+            <>
+              <Wifi className="mr-2 size-4" />
+              Go Online
+            </>
+          )}
+        </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm">Available Tasks</CardTitle>
-            <Package className="size-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">0</div>
-            <p className="text-xs text-muted-foreground">No tasks available right now</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm">Active Delivery</CardTitle>
-            <Bike className="size-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">You are offline</p>
-          </CardContent>
-        </Card>
-      </div>
+      {currentOffer && (
+        <DeliveryOfferBanner
+          offer={currentOffer}
+          onDismiss={() => setCurrentOffer(null)}
+        />
+      )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">How it works</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>1. Go online to start receiving delivery tasks</p>
-          <p>2. Accept an available task when you see one</p>
-          <p>3. Pick up the order from the branch</p>
-          <p>4. Deliver to the customer and mark as delivered</p>
-        </CardContent>
-      </Card>
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => setActiveTab(v as DeliveryTab)}
+      >
+        <TabsList>
+          <TabsTrigger value={DELIVERY_TABS.ACTIVE}>Active</TabsTrigger>
+          <TabsTrigger value={DELIVERY_TABS.DELIVERED}>Delivered</TabsTrigger>
+          <TabsTrigger value={DELIVERY_TABS.EARNINGS}>Earnings</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {activeTab === DELIVERY_TABS.ACTIVE && (
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-32 animate-pulse rounded-lg bg-muted"
+                />
+              ))}
+            </div>
+          ) : tasks?.length === 0 ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              {isOnline
+                ? "No active deliveries. Waiting for offers..."
+                : "Go online to receive delivery tasks."}
+            </div>
+          ) : (
+            tasks?.map((task) => (
+              <DeliveryActiveTask key={task.orderId} task={task} />
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === DELIVERY_TABS.DELIVERED && (
+        <div className="space-y-3">
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-24 animate-pulse rounded-lg bg-muted"
+                />
+              ))}
+            </div>
+          ) : tasks?.length === 0 ? (
+            <div className="py-12 text-center text-sm text-muted-foreground">
+              No completed deliveries yet.
+            </div>
+          ) : (
+            tasks?.map((task) => (
+              <DeliveryTaskCard key={task.orderId} task={task} />
+            ))
+          )}
+        </div>
+      )}
+
+      {activeTab === DELIVERY_TABS.EARNINGS && <DeliveryEarnings />}
     </div>
   );
 };

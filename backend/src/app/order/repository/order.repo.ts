@@ -70,13 +70,18 @@ export async function findOrderByPublicId(publicId: string, conn: Knex = db): Pr
   };
 }
 
-export async function findReadyUnassigned(limit: number, conn: Knex = db): Promise<Order[]> {
+export async function findReadyUnassigned(
+  limit: number,
+  excludedOrderIds: string[],
+  conn: Knex = db,
+): Promise<Order[]> {
   const rows = await conn('orders')
     .select(ORDER_COLUMNS)
     .where({
       status: 'ready',
       order_type: 'delivery',
     })
+    .whereNotIn('public_id', excludedOrderIds)
     .whereNull('delivery_agent_id')
     .orderBy('created_at', 'asc')
     .limit(limit);
@@ -85,7 +90,8 @@ export async function findReadyUnassigned(limit: number, conn: Knex = db): Promi
 
 export async function claimReadyOrderForAgent(publicId: string, agentId: number, conn: Knex): Promise<Order | null> {
   const [row] = await conn('orders')
-    .where({ public_id: publicId, status: 'ready' })
+    .where({ public_id: publicId })
+    .whereIn('status', ['ready', 'exhausted'])
     .whereNull('delivery_agent_id')
     .update({
       status: 'assigned',

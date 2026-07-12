@@ -41,7 +41,8 @@ orderRouter.patch(
   requireBranchAccess('branchId'),
   rbac({
     resource: 'core:orders',
-    action: (req) => req.body.status || 'update',
+    action: (req) =>
+      req.body.status === 'rejected' ? 'reject' : req.body.status === 'cancelled' ? 'cancel' : 'update',
   }),
   orderController.updateOrderStatus,
 );

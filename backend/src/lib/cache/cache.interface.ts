@@ -6,7 +6,7 @@ export interface ICacheProvider {
   set(key: string, value: any, ttlSeconds?: number): Promise<any>;
   del(key: string): Promise<any>;
   delByPattern(pattern: string): Promise<any>;
-  
+
   /**
    * Atomic set-if-absent (SET ... NX [EX ttl]). Returns true if the key
    * was newly written, false if it already existed.
@@ -21,6 +21,12 @@ export interface ICacheProvider {
 
   /** Atomic INCR. Returns the new (post-increment) value. */
   incr(key: string): Promise<number>;
+
+  /**
+   * KEYS — Returns all keys matching pattern.
+   * e.g. `cache.keys('assignment:offer:*')`
+   */
+  keys(pattern: string): Promise<string[]>;
 
   /**
    * EXPIRE — set or refresh the TTL on an existing key (seconds).

@@ -2,6 +2,14 @@ import { Knex } from 'knex';
 import { db } from '../../../lib/knex/knex.js';
 import { PhoneAlreadyInUseError } from '../error.js';
 import { User } from '../types.js';
+import { SystemRole } from '../enums.js';
+
+export interface DeliveryAgentResult {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+}
 
 const USER_COLUMNS = [
   'id',
@@ -103,4 +111,18 @@ export async function updateUser(
     .returning(USER_COLUMNS);
 
   return row;
+}
+
+export async function searchDeliveryAgents(query: string): Promise<DeliveryAgentResult[]> {
+  const pattern = `%${query}%`;
+  return db('users')
+    .select('id', 'name', 'email', 'phone')
+    .where({ system_role: SystemRole.DELIVERY_AGENT })
+    .whereNull('deleted_at')
+    .andWhere((qb) => {
+      qb.whereILike('name', pattern)
+        .orWhereLike('phone', pattern)
+        .orWhereILike('email', pattern);
+    })
+    .limit(20);
 }

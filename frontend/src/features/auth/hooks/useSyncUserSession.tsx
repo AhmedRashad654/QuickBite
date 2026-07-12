@@ -1,8 +1,10 @@
 import { useActiveRestaurantStore } from "@/store/active-restaurant-store";
 import { useCallback } from "react";
 import { SYSTEM_ROLES, type AuthUser } from "../types";
+import { usePresenceStore } from "@/store/presence-store";
 
-export const useSyncActiveRestaurant = () => {
+export const useSyncUserSession = () => {
+  const setOnline = usePresenceStore((state) => state.setOnline);
   const setActiveRestaurant = useActiveRestaurantStore(
     (state) => state.setActiveRestaurant,
   );
@@ -10,8 +12,14 @@ export const useSyncActiveRestaurant = () => {
     (state) => state.activeRestaurant,
   );
 
-  const syncRestaurant = useCallback(
+  const syncSession = useCallback(
     (userData: AuthUser) => {
+      if (
+        userData.system_role === SYSTEM_ROLES.DELIVERY_AGENT &&
+        userData.isOnlineInRedis === true
+      ) {
+        setOnline(true);
+      }
       if (
         userData?.system_role === SYSTEM_ROLES.RESTAURANT_USER &&
         userData?.memberships &&
@@ -42,5 +50,5 @@ export const useSyncActiveRestaurant = () => {
     [activeRestaurant, setActiveRestaurant],
   );
 
-  return syncRestaurant;
+  return syncSession;
 };

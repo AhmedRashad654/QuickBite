@@ -38,6 +38,7 @@ export const filters = [
   { label: "Pending Payment", value: ORDER_STATUES.PENDING_PAYMENT },
   { label: "Cancelled", value: ORDER_STATUES.CANCELLED },
   { label: "Rejected", value: ORDER_STATUES.REJECTED },
+  { label: "Exhausted", value: ORDER_STATUES.EXHAUSTED },
 ];
 
 export const currentYear = new Date().getUTCFullYear();

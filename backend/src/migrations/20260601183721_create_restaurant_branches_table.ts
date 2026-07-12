@@ -1,7 +1,7 @@
 import type { Knex } from 'knex';
 
 // using minor unit for delivery_fee, commission
-// commision using percentage % 
+// commission using BPS (e.g., 10% = 1000)
 
 export async function up(knex: Knex): Promise<void> {
   await knex.raw(`

@@ -78,6 +78,29 @@ export class RedisCacheProvider implements ICacheProvider {
     await this.client.expire(key, ttlSeconds);
   }
 
+  async keys(pattern: string): Promise<string[]> {
+    return new Promise((resolve, reject) => {
+      const stream = this.client.scanStream({
+        match: pattern,
+        count: 100,
+      });
+
+      const allKeys: string[] = [];
+
+      stream.on('data', (resultKeys: string[]) => {
+        allKeys.push(...resultKeys);
+      });
+
+      stream.on('end', () => {
+        resolve(allKeys);
+      });
+
+      stream.on('error', (err) => {
+        reject(err);
+      });
+    });
+  }
+
   async ttl(key: string): Promise<number> {
     return this.client.ttl(key);
   }

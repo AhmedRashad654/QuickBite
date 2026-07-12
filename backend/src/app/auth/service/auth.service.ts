@@ -2,9 +2,7 @@ import { inject, injectable } from 'tsyringe';
 import { NotAuthenticated } from '../../../lib/auth/error.js';
 import { db } from '../../../lib/knex/knex.js';
 import { findBranchIdsByMemberId } from '../../rbac/repository/member-branch.repo.js';
-import {
-  findRestaurantsActiveWithRole,
-} from '../../rbac/repository/restaurant_member.repo.js';
+import { findRestaurantsActiveWithRole } from '../../rbac/repository/restaurant_member.repo.js';
 import { RestaurantMembership, ResultRestaurantsWithRole } from '../../rbac/type.js';
 import { RestaurantService } from '../../restaurant/service/restaurant.service.js';
 import { SystemRole } from '../../users/enums.js';
@@ -244,16 +242,14 @@ export class AuthService {
     if (payload.role == SystemRole.RESTAURANT_USER) {
       const rows = await findRestaurantsActiveWithRole(payload.userId);
       membershipsInfo = await Promise.all(
-        rows.map(
-          async (row: ResultRestaurantsWithRole) => {
-            const branchIds = await findBranchIdsByMemberId(row.member_id);
-            return {
-              restaurantId: row.restaurant_id,
-              restaurantRole: row.role_name,
-              branchIds: branchIds,
-            };
-          },
-        ),
+        rows.map(async (row: ResultRestaurantsWithRole) => {
+          const branchIds = await findBranchIdsByMemberId(row.member_id);
+          return {
+            restaurantId: row.restaurant_id,
+            restaurantRole: row.role_name,
+            branchIds: branchIds,
+          };
+        }),
       );
     }
 

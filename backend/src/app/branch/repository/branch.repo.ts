@@ -46,18 +46,14 @@ export async function createBranch(data: Partial<Branch>, conn: Knex = db): Prom
   return row;
 }
 
-
 export async function findBranchesByRestaurant(
-  restaurantId: number, 
+  restaurantId: number,
   isSuperUser: boolean,
-  allowedBranchIds?: number[]
+  allowedBranchIds?: number[],
 ): Promise<Branch[]> {
-  
-  const query = db('restaurant_branches')
-    .select(BRANCH_COLUMNS)
-    .where('restaurant_id', restaurantId);
+  const query = db('restaurant_branches').select(BRANCH_COLUMNS).where('restaurant_id', restaurantId);
   if (!isSuperUser && allowedBranchIds) {
-    query.whereIn('id', allowedBranchIds); 
+    query.whereIn('id', allowedBranchIds);
   }
 
   return await query;
@@ -94,7 +90,7 @@ export async function findBranchByIdWithRestaurant(branchId: number): Promise<Pa
 }
 
 export async function findBranchsByIds(ids: number[]): Promise<Branch[]> {
-  const rows = await db('restaurant_branches').select(BRANCH_COLUMNS).whereIn('id', ids).first();
+  const rows = await db('restaurant_branches').select(BRANCH_COLUMNS).whereIn('id', ids);
   return rows;
 }
 

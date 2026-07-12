@@ -14,7 +14,7 @@ export function registerAssignmentJobs(): void {
     handler: async () => {
       const assignmentService = container.resolve<AssignmentService>(TOKENS.AssignmentService);
       const result = await assignmentService.tickRegion();
-
+      console.log(result, 'result from tick region');
       if (result.processed > 0) {
         logger.info('assignment.tick processed successfully', { ...result });
       }
