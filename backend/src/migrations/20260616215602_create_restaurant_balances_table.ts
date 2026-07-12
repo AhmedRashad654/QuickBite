@@ -1,17 +1,18 @@
-import type {Knex} from "knex";
+import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
-    await knex.raw(`
+  await knex.raw(`
         CREATE TABLE restaurant_balances (
             restaurant_id BIGINT NOT NULL,
             currency      TEXT NOT NULL,
             balance       INT NOT NULL DEFAULT 0,
             updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            PRIMARY KEY (restaurant_id, currency)
+            PRIMARY KEY (restaurant_id, currency),
+            CONSTRAINT fk_restaurant_balances_restaurant_id FOREIGN KEY (restaurant_id) REFERENCES restaurants(id) ON DELETE CASCADE
         );
     `);
 }
 
 export async function down(knex: Knex): Promise<void> {
-    await knex.raw(`DROP TABLE IF EXISTS restaurant_balances`);
+  await knex.raw(`DROP TABLE IF EXISTS restaurant_balances`);
 }

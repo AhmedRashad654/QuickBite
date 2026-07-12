@@ -6,9 +6,8 @@ import { Server as IoServer } from 'socket.io';
 import { container } from '../../../lib/di/container.js';
 import { AssignmentService } from '../../assignment/service/assignment.service.js';
 import { OrderStatusResponseDTO } from '../../order/dto/order.response.dto.js';
-import { findOrderByPublicId, updateOrderCommission, updateOrderStatus } from '../../order/repository/order.repo.js';
+import { findOrderByPublicId, updateOrderCommission, updateOrderDeliveryEarning, updateOrderStatus } from '../../order/repository/order.repo.js';
 import { OrderStatus, PaymentMethod } from '../../order/enums.js';
-import { insertEarning } from '../repository/agent-earning.repo.js';
 import { createTransactionIdempotent } from '../../payment/repository/transaction.repo.js';
 import { TransactionMethod, TransactionStatus, TransactionType } from '../../payment/enums.js';
 import { NotYourTaskError } from '../errors.js';
@@ -18,6 +17,7 @@ import { logger } from '../../../lib/logger/logger.js';
 import { Order } from '../../order/types.js';
 import { db } from '../../../lib/knex/knex.js';
 import { upsertIncrement } from '../../finance/repository/restaurant-balance.repo.js';
+import { upsertIncrement as upsertAgentBalance } from '../repository/agent-balance.repo.js';
 import { env } from '../../../lib/config/env.js';
 import { OrderNotFoundError } from '../../order/errors.js';
 
@@ -55,6 +55,11 @@ export class SettlementService {
     try {
       // Stamp commission FIRST so subsequent writes see the right number.
       await updateOrderCommission(publicId, commission, trx);
+
+      // Snapshot agent earning on the order (frozen at settlement time).
+      if (earning > 0) {
+        await updateOrderDeliveryEarning(publicId, earning, trx);
+      }
 
       // For COD, write the charge transaction now (succeeded; the agent took the cash).
       if (order.payment_method === PaymentMethod.COD) {
@@ -154,16 +159,17 @@ export class SettlementService {
         );
       }
 
-      // Agent earning. UNIQUE(order_id) makes this idempotent.
-      await insertEarning(
-        {
-          agent_id: order.delivery_agent_id!,
-          order_id: order.id,
-          amount: earning,
-          currency: order.currency,
-        },
-        trx,
-      );
+      // Agent balance: mirror earning into running wallet.
+      if (earning > 0) {
+        await upsertAgentBalance(
+          {
+            agent_id: order.delivery_agent_id!,
+            currency: order.currency,
+            delta: earning,
+          },
+          trx,
+        );
+      }
 
       // Finally flip status to delivered.
       updated = await updateOrderStatus(publicId, OrderStatus.DELIVERED, 'delivered_at', trx);

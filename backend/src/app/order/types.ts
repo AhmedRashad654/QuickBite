@@ -29,6 +29,7 @@ export interface Order {
   ready_at: Date | null;
   assigned_at: Date | null;
   delivery_agent_id: number | null;
+  delivery_earning: number;
   picked_at: Date | null;
   delivered_at: Date | null;
   cancelled_at: Date | null;

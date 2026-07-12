@@ -1,12 +1,14 @@
 import { injectable } from 'tsyringe';
 import { decrementIfSufficient, findByRestaurant } from '../repository/restaurant-balance.repo.js';
-import { PayoutResponseDTO, RestaurantBalanceResponseDTO } from '../dto/finance.response.dto.js';
+import { AgentBalanceResponseDTO, PayoutResponseDTO, RestaurantBalanceResponseDTO } from '../dto/finance.response.dto.js';
 import { createTransaction, findPayouts } from '../../payment/repository/transaction.repo.js';
 import { findRestaurantById } from '../../restaurant/repository/restaurant.repo.js';
-import { CreatePayoutRequestDTO } from '../dto/finance.request.dto.js';
+import { CreateAgentPayoutRequestDTO, CreatePayoutRequestDTO } from '../dto/finance.request.dto.js';
 import { db } from '../../../lib/knex/knex.js';
-import { InsufficientBalanceError, RestaurantNotFoundError } from '../errors.js';
+import { AgentNotFoundError, InsufficientAgentBalanceError, InsufficientBalanceError, RestaurantNotFoundError } from '../errors.js';
 import { TransactionMethod, TransactionStatus, TransactionType } from '../../payment/enums.js';
+import { findByAgent, decrementIfSufficient as decrementAgentBalance } from '../../agent/repository/agent-balance.repo.js';
+import { findUserById } from '../../users/repository/users.repo.js';
 
 @injectable()
 export class FinanceService {
@@ -63,6 +65,58 @@ export class FinanceService {
       return PayoutResponseDTO.from(tx);
     } catch (err) {
       // If trx is already rolled back (InsufficientBalance) this is a no-op.
+      try {
+        await trx.rollback();
+      } catch {}
+      throw err;
+    }
+  }
+
+  // ── Agent balance / payout ──────────────────────────────────────────
+
+  async getAgentBalance(agentId: number): Promise<AgentBalanceResponseDTO> {
+    const rows = await findByAgent(agentId);
+    return AgentBalanceResponseDTO.from(agentId, rows);
+  }
+
+  async listAgentPayouts(agentId: number, from: Date, to: Date, limit: number): Promise<PayoutResponseDTO[]> {
+    const rows = await findPayouts({ ownerId: agentId, from, to }, limit);
+    return rows.map(PayoutResponseDTO.from);
+  }
+
+  async recordAgentPayout(body: CreateAgentPayoutRequestDTO, idempotencyKey: string): Promise<PayoutResponseDTO> {
+    const user = await findUserById(body.agent_id);
+    if (!user) throw AgentNotFoundError;
+
+    const trx = await db.transaction();
+    try {
+      const decremented = await decrementAgentBalance(
+        { agentId: body.agent_id, currency: body.currency, amount: body.amount },
+        trx,
+      );
+      if (!decremented) {
+        await trx.rollback();
+        throw InsufficientAgentBalanceError;
+      }
+      const tx = await createTransaction(
+        {
+          order_id: null,
+          transaction_type: TransactionType.PAYOUT,
+          method: TransactionMethod.BANK_TRANSFER,
+          provider_id: null,
+          provider_reference_id: body.provider_reference_id,
+          status: TransactionStatus.SUCCEEDED,
+          amount: body.amount,
+          currency: body.currency,
+          src_acc_id: null,
+          dst_acc_id: body.agent_id,
+          idempotency_key: idempotencyKey,
+        },
+        trx,
+      );
+      await trx.commit();
+      return PayoutResponseDTO.from(tx);
+    } catch (err) {
       try {
         await trx.rollback();
       } catch {}

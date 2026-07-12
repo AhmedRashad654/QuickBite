@@ -24,3 +24,28 @@ export class CreatePayoutRequestDTO {
     @MaxLength(500)
     note?: string;
 }
+
+export class CreateAgentPayoutRequestDTO {
+    @IsInt()
+    @IsPositive()
+    agent_id!: number;
+
+    @IsInt()
+    @IsPositive()
+    amount!: number; // minor units
+
+    @IsString()
+    @MinLength(2)
+    @MaxLength(8)
+    currency!: string;
+
+    @IsString()
+    @MinLength(1)
+    @MaxLength(128)
+    provider_reference_id!: string;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(500)
+    note?: string;
+}

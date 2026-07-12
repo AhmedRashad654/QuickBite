@@ -3,12 +3,14 @@ import { FinanceController } from './controller/finance.controller.js';
 import { container } from '../../lib/di/container.js';
 import { TOKENS } from '../../lib/di/tokens.js';
 import { authenticate } from '../../lib/auth/guard.js';
-import { rbac, requireRestaurantMember } from '../../lib/auth/rbac.js';
+import { rbac, requireAdmin, requireAgent, requireRestaurantMember } from '../../lib/auth/rbac.js';
 import { idempotency } from '../../lib/idempotency/idempotency.js';
 
 export const financeRouter = Router();
 
 const ctrl = container.resolve<FinanceController>(TOKENS.FinanceController);
+
+// ── Restaurant ────────────────────────────────────────────────────────
 
 // Restaurant-scoped reads. requireRestaurantMember pins :restaurantId to the
 // JWT's restaurantId; system_admin bypasses.
@@ -36,4 +38,21 @@ financeRouter.post(
   rbac({ resource: 'finance', action: 'payout_create' }),
   idempotency({ strict: true }),
   ctrl.createPayout,
+);
+
+// ── Agent (delivery) ─────────────────────────────────────────────────
+
+// Agent reads own balance.
+financeRouter.get('/agents/balance', authenticate, requireAgent, ctrl.getAgentBalance);
+
+// Agent reads own payout history.
+financeRouter.get('/agents/payouts', authenticate, requireAgent, ctrl.listAgentPayouts);
+
+// Admin pays out an agent.
+financeRouter.post(
+  '/admin/agents/:agentId/payouts',
+  authenticate,
+  requireAdmin,
+  idempotency({ strict: true }),
+  ctrl.createAgentPayout,
 );

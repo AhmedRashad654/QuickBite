@@ -39,7 +39,7 @@ export function DeliveryTaskCard({ task }: Props) {
               <p className="truncate font-medium">
                 {task.pickup.name || "Branch"}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {task.pickup.addressText}
               </p>
             </div>
@@ -47,7 +47,7 @@ export function DeliveryTaskCard({ task }: Props) {
           <div className="flex items-start gap-2">
             <MapPin className="mt-0.5 size-3 shrink-0 text-blue-600" />
             <div className="min-w-0">
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 {task.dropoff.addressText}
               </p>
             </div>
@@ -58,9 +58,16 @@ export function DeliveryTaskCard({ task }: Props) {
           <span className="text-muted-foreground">
             {task.paymentMethod === "cod" ? "Cash on Delivery" : "Paid Online"}
           </span>
-          <span className="font-semibold">
-            {formatPrice(task.total, task.currency)}
-          </span>
+          <div className="text-right">
+            <span className="font-semibold">
+              {formatPrice(task.total, task.currency)}
+            </span>
+            {task.deliveryEarning > 0 && (
+              <p className="text-xs text-green-600">
+                +{formatPrice(task.deliveryEarning, task.currency)} earning
+              </p>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

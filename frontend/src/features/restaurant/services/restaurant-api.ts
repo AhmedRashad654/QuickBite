@@ -217,3 +217,38 @@ export const completeOrder = async (publicId: string) => {
   );
   return unwrap(res);
 };
+
+export const getRestaurantBalance = async (restaurantId: number) => {
+  const res = await apiClient.get<
+    ApiResponse<{
+      restaurant_id: number;
+      balances: Array<{ currency: string; balance: number }>;
+      asOf: string;
+    }>
+  >(`/finance/restaurants/${restaurantId}/balance`);
+  return unwrapResponse(res);
+};
+
+export const getRestaurantPayouts = async (
+  restaurantId: number,
+  from?: string,
+  to?: string,
+) => {
+  const params: Record<string, string> = {};
+  if (from) params.from = from;
+  if (to) params.to = to;
+
+  const res = await apiClient.get<
+    ApiResponse<
+      Array<{
+        id: number;
+        amount: number;
+        currency: string;
+        status: string;
+        provider_reference_id: string | null;
+        createdAt: string;
+      }>
+    >
+  >(`/finance/restaurants/${restaurantId}/payouts`, { params });
+  return unwrapResponse(res);
+};

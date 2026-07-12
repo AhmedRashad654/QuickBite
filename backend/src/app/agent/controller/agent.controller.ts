@@ -56,13 +56,4 @@ export class AgentController {
     const list = await this.agent.listTasks(req.user!.userId, status);
     sendSuccess(res, list);
   };
-
-  earnings = async (req: Request, res: Response) => {
-    const now = new Date();
-    const defaultFrom = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-    const from = req.query.from ? new Date(String(req.query.from)) : defaultFrom;
-    const to = req.query.to ? new Date(String(req.query.to)) : now;
-    const dto = await this.agent.earnings(req.user!.userId, from, to);
-    sendSuccess(res, dto);
-  };
 }

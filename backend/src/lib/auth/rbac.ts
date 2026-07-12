@@ -148,6 +148,12 @@ export function requireAgent(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) return res.status(401).json({ error: 'User not authenticated' });
+  if (req.user.role !== SystemRole.SYSTEM_ADMIN) return res.status(403).json({ error: 'Admin role required' });
+  next();
+}
+
 export function injectRestaurantIdFromProduct(paramName: string = 'productId') {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -168,7 +174,6 @@ export function injectRestaurantIdFromProduct(paramName: string = 'productId') {
 export function injectBranchIdFromOrder() {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      console.log('helllllllllllllllllllll');
       const { publicId } = req.params;
       if (!publicId) return res.status(400).json({ error: 'Missing order public ID' });
 

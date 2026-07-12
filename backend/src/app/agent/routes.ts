@@ -31,4 +31,3 @@ agentRouter.patch(
 
 // Reads
 agentRouter.get('/tasks', authenticate, requireAgent, ctrl.tasks);
-agentRouter.get('/earnings', authenticate, requireAgent, ctrl.earnings);

@@ -1,7 +1,12 @@
 import { apiClient } from "@/api/axios-client";
 import type { ApiResponse } from "@/api/api-helper";
 import { unwrap, unwrapResponse } from "@/features/auth/services/auth-api";
-import type { AgentEarningsResponse, DeliveryTask } from "../types";
+import type {
+  AgentBalanceResponse,
+  AgentEarningsResponse,
+  AgentPayoutItem,
+  DeliveryTask,
+} from "../types";
 import { DELIVERY_TABS, type DeliveryTab } from "../constants";
 import { ORDER_STATUES } from "@/features/orders/types";
 
@@ -84,6 +89,25 @@ export const getAgentEarnings = async (from?: string, to?: string) => {
 
   const response = await apiClient.get<ApiResponse<AgentEarningsResponse>>(
     "/agents/earnings",
+    { params },
+  );
+  return unwrapResponse(response);
+};
+
+export const getAgentBalance = async () => {
+  const response = await apiClient.get<ApiResponse<AgentBalanceResponse>>(
+    "/finance/agents/balance",
+  );
+  return unwrapResponse(response);
+};
+
+export const getAgentPayouts = async (from?: string, to?: string) => {
+  const params: Record<string, string> = {};
+  if (from) params.from = from;
+  if (to) params.to = to;
+
+  const response = await apiClient.get<ApiResponse<AgentPayoutItem[]>>(
+    "/finance/agents/payouts",
     { params },
   );
   return unwrapResponse(response);

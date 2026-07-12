@@ -4,7 +4,7 @@ import { FinanceService } from '../service/finance.service.js';
 import { TOKENS } from '../../../lib/di/tokens.js';
 import { sendSuccess } from '../../../lib/http/response.js';
 import { validateBody } from '../../../lib/validation/validate.js';
-import { CreatePayoutRequestDTO } from '../dto/finance.request.dto.js';
+import { CreateAgentPayoutRequestDTO, CreatePayoutRequestDTO } from '../dto/finance.request.dto.js';
 
 const PAYOUT_LIST_LIMIT = 50;
 
@@ -36,6 +36,35 @@ export class FinanceController {
     });
     const idempotencyKey = String(req.headers['idempotency-key'] ?? '');
     const dto = await this.finance.recordPayout(body, idempotencyKey);
+    sendSuccess(res, dto, undefined, 201);
+  };
+
+  // ── Agent balance / payout ──────────────────────────────────────────
+
+  getAgentBalance = async (req: Request, res: Response) => {
+    const agentId = req.user!.userId;
+    const dto = await this.finance.getAgentBalance(agentId);
+    sendSuccess(res, dto);
+  };
+
+  listAgentPayouts = async (req: Request, res: Response) => {
+    const agentId = req.user!.userId;
+    const now = new Date();
+    const defaultFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+    const from = req.query.from ? new Date(String(req.query.from)) : defaultFrom;
+    const to = req.query.to ? new Date(String(req.query.to)) : now;
+    const items = await this.finance.listAgentPayouts(agentId, from, to, PAYOUT_LIST_LIMIT);
+    sendSuccess(res, items);
+  };
+
+  /** POST /finance/admin/agents/:agentId/payouts */
+  createAgentPayout = async (req: Request, res: Response) => {
+    const body = await validateBody(CreateAgentPayoutRequestDTO, {
+      ...req.body,
+      agent_id: Number(req.params.agentId),
+    });
+    const idempotencyKey = String(req.headers['idempotency-key'] ?? '');
+    const dto = await this.finance.recordAgentPayout(body, idempotencyKey);
     sendSuccess(res, dto, undefined, 201);
   };
 }

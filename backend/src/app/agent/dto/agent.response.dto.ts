@@ -1,7 +1,6 @@
 import { Currency } from '../../branch/enums.js';
 import { OrderStatus } from '../../order/enums.js';
 import { Order } from '../../order/types.js';
-import { AgentEarning } from '../types.js';
 
 export class DeliveryTaskResponseDTO {
   orderId!: string; // public_id
@@ -15,6 +14,7 @@ export class DeliveryTaskResponseDTO {
   };
   dropoff!: { lat: number; lng: number; addressText: string };
   total!: number;
+  deliveryEarning!: number;
   currency!: Currency;
   paymentMethod!: string;
   assignedAt!: string | null;
@@ -41,6 +41,7 @@ export class DeliveryTaskResponseDTO {
       addressText: order.delivery_address_text_snapshot,
     };
     dto.total = order.total;
+    dto.deliveryEarning = order.delivery_earning;
     dto.currency = order.currency;
     dto.paymentMethod = order.payment_method;
     dto.assignedAt = order.assigned_at ? order.assigned_at.toISOString() : null;
@@ -51,17 +52,17 @@ export class DeliveryTaskResponseDTO {
 }
 
 export class AgentEarningItemDTO {
-  orderId!: number;
+  orderId!: string;
   amount!: number;
   currency!: string;
   earnedAt!: string;
 
-  static from(e: AgentEarning): AgentEarningItemDTO {
+  static from(o: Order): AgentEarningItemDTO {
     const dto = new AgentEarningItemDTO();
-    dto.orderId = e.order_id;
-    dto.amount = e.amount;
-    dto.currency = e.currency;
-    dto.earnedAt = e.earned_at.toISOString();
+    dto.orderId = o.public_id;
+    dto.amount = o.delivery_earning;
+    dto.currency = o.currency;
+    dto.earnedAt = o.delivered_at ? o.delivered_at.toISOString() : '';
     return dto;
   }
 }
@@ -71,7 +72,7 @@ export class AgentEarningsResponseDTO {
   totals!: { count: number; sum: number; currency: string | null };
   items!: AgentEarningItemDTO[];
 
-  static from(from: Date, to: Date, items: AgentEarning[], sum: number): AgentEarningsResponseDTO {
+  static from(from: Date, to: Date, items: Order[], sum: number): AgentEarningsResponseDTO {
     const dto = new AgentEarningsResponseDTO();
     dto.range = { from: from.toISOString(), to: to.toISOString() };
     dto.totals = {

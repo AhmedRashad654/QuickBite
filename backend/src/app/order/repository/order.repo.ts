@@ -39,6 +39,7 @@ export const ORDER_COLUMNS = [
   'currency',
   'payment_method',
   'delivery_agent_id',
+  'delivery_earning',
   'created_at',
   'updated_at',
   'accepted_at',
@@ -136,6 +137,12 @@ export async function findAgentTasks(
 
 export async function updateOrderCommission(publicId: string, commission: number, conn: Knex): Promise<void> {
   await conn('orders').where({ public_id: publicId }).update({ commission, updated_at: conn.fn.now() });
+}
+
+export async function updateOrderDeliveryEarning(publicId: string, deliveryEarning: number, conn: Knex): Promise<void> {
+  await conn('orders')
+    .where({ public_id: publicId })
+    .update({ delivery_earning: deliveryEarning, updated_at: conn.fn.now() });
 }
 
 export async function updateOrderStatus(

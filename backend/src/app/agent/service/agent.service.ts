@@ -4,13 +4,12 @@ import { TOKENS } from '../../../lib/di/tokens.js';
 import { container } from '../../../lib/di/container.js';
 import { AssignmentService } from '../../assignment/service/assignment.service.js';
 import { OrderStatus } from '../../order/enums.js';
-import { AgentEarningsResponseDTO, DeliveryTaskResponseDTO } from '../dto/agent.response.dto.js';
+import { DeliveryTaskResponseDTO } from '../dto/agent.response.dto.js';
 import { findBranchById, findBranchsByIds } from '../../branch/repository/branch.repo.js';
 import { findAgentTasks, findOrderByPublicId, updateOrderStatus } from '../../order/repository/order.repo.js';
 import { NotYourTaskError } from '../errors.js';
 import { db } from '../../../lib/knex/knex.js';
 import { OrderStatusResponseDTO } from '../../order/dto/order.response.dto.js';
-import { listByAgent, sumByAgent } from '../repository/agent-earning.repo.js';
 import { SettlementService } from './settlement.service.js';
 import { AppError } from '../../../lib/error/AppError.js';
 
@@ -75,22 +74,14 @@ export class AgentService {
     }
     const statuses = statusFilter ? [statusFilter] : [OrderStatus.ASSIGNED, OrderStatus.PICKED];
     const orders = await findAgentTasks(agentId, statuses, TASK_LIST_LIMIT);
-    console.log(orders, 'orde');
     // Single batch lookup for branch enrichment — at most one network
     // round-trip regardless of how many unique branches the agent has
     // tasks at. Cache hits per branch are also served from this call.
     const branchs = await findBranchsByIds(orders.map((o) => o.branch_id));
-    console.log(branchs, 'br');
     const enriched = new Map<number, { lat: number; lng: number; name: string; addressText: string }>();
     for (const b of branchs) {
       enriched.set(b.id, { lat: b.lat, lng: b.lng, name: b.label, addressText: b.address_text });
     }
     return orders.map((o) => DeliveryTaskResponseDTO.from(o, enriched.get(o.branch_id)));
-  }
-
-  async earnings(agentId: number, from: Date, to: Date): Promise<AgentEarningsResponseDTO> {
-    const items = await listByAgent(agentId, { from, to }, 100);
-    const sum = await sumByAgent(agentId, { from, to });
-    return AgentEarningsResponseDTO.from(from, to, items, sum);
   }
 }

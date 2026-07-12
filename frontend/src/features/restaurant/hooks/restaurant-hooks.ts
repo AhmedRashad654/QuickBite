@@ -27,6 +27,8 @@ import {
   searchDeliveryAgents,
   assignOrderExhausted,
   completeOrder,
+  getRestaurantBalance,
+  getRestaurantPayouts,
 } from "../services/restaurant-api";
 import type { UpdateMemberPayload } from "../types";
 import type {
@@ -387,5 +389,29 @@ export const useAssignOrderExhausted = () => {
 export const useCompleteOrder = () => {
   return useMutation({
     mutationFn: (publicId: string) => completeOrder(publicId),
+  });
+};
+
+export const useRestaurantBalance = () => {
+  const activeRestaurant = useActiveRestaurantStore(
+    (state) => state.activeRestaurant,
+  );
+  const id = activeRestaurant?.restaurantId;
+  return useQuery({
+    queryKey: ["restaurant", id, "balance"],
+    queryFn: () => getRestaurantBalance(id!),
+    enabled: !!id,
+  });
+};
+
+export const useRestaurantPayouts = () => {
+  const activeRestaurant = useActiveRestaurantStore(
+    (state) => state.activeRestaurant,
+  );
+  const id = activeRestaurant?.restaurantId;
+  return useQuery({
+    queryKey: ["restaurant", id, "payouts"],
+    queryFn: () => getRestaurantPayouts(id!),
+    enabled: !!id,
   });
 };

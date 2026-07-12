@@ -10,6 +10,7 @@ export interface DeliveryTask {
   };
   dropoff: { lat: number; lng: number; addressText: string };
   total: number;
+  deliveryEarning: number;
   currency: string;
   paymentMethod: string;
   assignedAt: string | null;
@@ -34,7 +35,7 @@ export interface DeliveryOffer {
 }
 
 export interface AgentEarningItem {
-  orderId: number;
+  orderId: string;
   amount: number;
   currency: string;
   earnedAt: string;
@@ -44,4 +45,24 @@ export interface AgentEarningsResponse {
   range: { from: string; to: string };
   totals: { count: number; sum: number; currency: string | null };
   items: AgentEarningItem[];
+}
+
+export interface AgentBalanceItem {
+  currency: string;
+  balance: number;
+}
+
+export interface AgentBalanceResponse {
+  agent_id: number;
+  balances: AgentBalanceItem[];
+  asOf: string;
+}
+
+export interface AgentPayoutItem {
+  id: number;
+  amount: number;
+  currency: string;
+  status: string;
+  provider_reference_id: string | null;
+  createdAt: string;
 }

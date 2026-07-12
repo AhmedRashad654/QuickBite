@@ -1,5 +1,6 @@
 import { Transaction } from "../../payment/types.js";
 import { RestaurantBalance } from "../types.js";
+import { AgentBalance } from "../../agent/types.js";
 
 
 export class RestaurantBalanceResponseDTO {
@@ -10,6 +11,20 @@ export class RestaurantBalanceResponseDTO {
     static from(restaurantId: number, rows: RestaurantBalance[]): RestaurantBalanceResponseDTO {
         const dto = new RestaurantBalanceResponseDTO();
         dto.restaurant_id = restaurantId;
+        dto.balances = rows.map((r) => ({currency: r.currency, balance: r.balance}));
+        dto.asOf = new Date().toISOString();
+        return dto;
+    }
+}
+
+export class AgentBalanceResponseDTO {
+    agent_id!: number;
+    balances!: Array<{currency: string; balance: number}>;
+    asOf!: string;
+
+    static from(agentId: number, rows: AgentBalance[]): AgentBalanceResponseDTO {
+        const dto = new AgentBalanceResponseDTO();
+        dto.agent_id = agentId;
         dto.balances = rows.map((r) => ({currency: r.currency, balance: r.balance}));
         dto.asOf = new Date().toISOString();
         return dto;
