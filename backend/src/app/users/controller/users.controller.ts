@@ -26,4 +26,9 @@ export class UsersController {
     const agents = await this.userService.searchDeliveryAgents(query);
     sendSuccess(res, agents);
   };
+
+  listDeliveryAgentsForAdmin = async (_req: Request, res: Response) => {
+    const agents = await this.userService.listDeliveryAgentsForAdmin();
+    sendSuccess(res, agents);
+  };
 }

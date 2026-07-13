@@ -1,9 +1,6 @@
 import {IsInt, IsPositive, IsString, MinLength, MaxLength, IsOptional} from "class-validator";
 
 export class CreatePayoutRequestDTO {
-    @IsInt()
-    @IsPositive()
-    restaurant_id!: number;
 
     @IsInt()
     @IsPositive()
@@ -26,9 +23,7 @@ export class CreatePayoutRequestDTO {
 }
 
 export class CreateAgentPayoutRequestDTO {
-    @IsInt()
-    @IsPositive()
-    agent_id!: number;
+
 
     @IsInt()
     @IsPositive()

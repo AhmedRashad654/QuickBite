@@ -126,3 +126,18 @@ export async function searchDeliveryAgents(query: string): Promise<DeliveryAgent
     })
     .limit(20);
 }
+
+
+export async function listDeliveryAgentsForAdmin(): Promise<Partial<User>[]> {
+  return db('users as u')
+    .select(
+      'u.id',
+      'u.name',
+      'u.email',
+      'u.phone',
+      'u.created_at',
+    )
+    .where({ 'u.system_role': SystemRole.DELIVERY_AGENT })
+    .whereNull('u.deleted_at')
+    .orderBy('u.created_at', 'desc');
+}

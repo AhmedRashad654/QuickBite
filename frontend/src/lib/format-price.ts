@@ -5,3 +5,7 @@ export const formatPrice = (price: number, currency?: string) => {
   });
   return `${formatted} ${currency || ""}`;
 };
+
+export const formatPercentage = (percentage: number) => {
+  return `${percentage / 100} ${percentage > 0 ? "%" : ""} `;
+};

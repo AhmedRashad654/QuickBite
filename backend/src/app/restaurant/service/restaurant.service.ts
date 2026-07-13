@@ -8,6 +8,7 @@ import {
 import {
   createRestaurant,
   findAllRestaurants,
+  findAllRestaurantsForAdmin,
   findRestaurantById,
   updateRestaurant,
   updateRestaurantStatus,
@@ -27,6 +28,7 @@ import {
 } from '../../../lib/http/pagination/cursor-pagination.js';
 import { TOKENS } from '../../../lib/di/tokens.js';
 import { MemberService } from '../../rbac/service/member.service.js';
+import { AdminRestaurantItem } from '../type.js';
 
 @injectable()
 export class RestaurantService {
@@ -106,6 +108,11 @@ export class RestaurantService {
   findAll = async (params: PaginationParams, filters: FilterParams[]) => {
     const result = await findAllRestaurants(params, filters);
     return buildPaginationResult(result, params.limit, params.sortBy);
+  };
+
+  findAllForAdmin = async (params: PaginationParams, filters: FilterParams[]) => {
+    const result = await findAllRestaurantsForAdmin(params, filters);
+    return buildPaginationResult<AdminRestaurantItem>(result, params.limit, params.sortBy);
   };
 
   findById = async (id: number) => {

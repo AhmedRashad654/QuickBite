@@ -32,6 +32,6 @@ EXPOSE 3000
 
 USER node
 
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+# ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
 CMD [ "node", "dist/server.js" ]

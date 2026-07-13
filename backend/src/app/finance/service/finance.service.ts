@@ -1,13 +1,25 @@
 import { injectable } from 'tsyringe';
 import { decrementIfSufficient, findByRestaurant } from '../repository/restaurant-balance.repo.js';
-import { AgentBalanceResponseDTO, PayoutResponseDTO, RestaurantBalanceResponseDTO } from '../dto/finance.response.dto.js';
+import {
+  AgentBalanceResponseDTO,
+  PayoutResponseDTO,
+  RestaurantBalanceResponseDTO,
+} from '../dto/finance.response.dto.js';
 import { createTransaction, findPayouts } from '../../payment/repository/transaction.repo.js';
 import { findRestaurantById } from '../../restaurant/repository/restaurant.repo.js';
 import { CreateAgentPayoutRequestDTO, CreatePayoutRequestDTO } from '../dto/finance.request.dto.js';
 import { db } from '../../../lib/knex/knex.js';
-import { AgentNotFoundError, InsufficientAgentBalanceError, InsufficientBalanceError, RestaurantNotFoundError } from '../errors.js';
+import {
+  AgentNotFoundError,
+  InsufficientAgentBalanceError,
+  InsufficientBalanceError,
+  RestaurantNotFoundError,
+} from '../errors.js';
 import { TransactionMethod, TransactionStatus, TransactionType } from '../../payment/enums.js';
-import { findByAgent, decrementIfSufficient as decrementAgentBalance } from '../../agent/repository/agent-balance.repo.js';
+import {
+  findByAgent,
+  decrementIfSufficient as decrementAgentBalance,
+} from '../../agent/repository/agent-balance.repo.js';
 import { findUserById } from '../../users/repository/users.repo.js';
 
 @injectable()
@@ -30,15 +42,19 @@ export class FinanceService {
    * the balance atomically. Idempotent on `idempotency_key` (set by the
    * idempotency middleware via the `Idempotency-Key` header).
    */
-  async recordPayout(body: CreatePayoutRequestDTO, idempotencyKey: string): Promise<PayoutResponseDTO> {
-    const restaurant = await findRestaurantById(body.restaurant_id);
+  async recordPayout(
+    body: CreatePayoutRequestDTO,
+    restaurantId: number,
+    idempotencyKey: string,
+  ): Promise<PayoutResponseDTO> {
+    const restaurant = await findRestaurantById(restaurantId);
     const ownerId = restaurant?.owner_id;
     if (!ownerId) throw RestaurantNotFoundError;
 
     const trx = await db.transaction();
     try {
       const decremented = await decrementIfSufficient(
-        { restaurantId: body.restaurant_id, currency: body.currency, amount: body.amount },
+        { restaurantId: restaurantId, currency: body.currency, amount: body.amount },
         trx,
       );
       if (!decremented) {
@@ -84,14 +100,18 @@ export class FinanceService {
     return rows.map(PayoutResponseDTO.from);
   }
 
-  async recordAgentPayout(body: CreateAgentPayoutRequestDTO, idempotencyKey: string): Promise<PayoutResponseDTO> {
-    const user = await findUserById(body.agent_id);
+  async recordAgentPayout(
+    body: CreateAgentPayoutRequestDTO,
+    agentId: number,
+    idempotencyKey: string,
+  ): Promise<PayoutResponseDTO> {
+    const user = await findUserById(agentId);
     if (!user) throw AgentNotFoundError;
 
     const trx = await db.transaction();
     try {
       const decremented = await decrementAgentBalance(
-        { agentId: body.agent_id, currency: body.currency, amount: body.amount },
+        { agentId: agentId, currency: body.currency, amount: body.amount },
         trx,
       );
       if (!decremented) {
@@ -109,7 +129,7 @@ export class FinanceService {
           amount: body.amount,
           currency: body.currency,
           src_acc_id: null,
-          dst_acc_id: body.agent_id,
+          dst_acc_id: agentId,
           idempotency_key: idempotencyKey,
         },
         trx,

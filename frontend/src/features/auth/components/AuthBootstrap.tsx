@@ -26,6 +26,7 @@ const AuthBootstrap = ({ children }: AuthBootstrapProps) => {
         if (!isMounted) return;
 
         setAccessToken(refreshed.accessToken);
+
         const userData = await getMe();
         if (!isMounted) return;
         setUser(userData);

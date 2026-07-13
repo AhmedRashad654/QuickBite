@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { container } from '../../lib/di/container.js';
 import { authenticate } from '../../lib/auth/guard.js';
-import { rbac, requireBranchAccess, requireRestaurantMember } from '../../lib/auth/rbac.js';
+import { rbac, requireAdmin, requireBranchAccess, requireRestaurantMember } from '../../lib/auth/rbac.js';
 import { BranchController } from './controller/branch.controller.js';
 import { TOKENS } from '../../lib/di/tokens.js';
 import { withCache } from '../../lib/cache/withCache.js';
@@ -31,4 +31,4 @@ branchRouter.patch(
   rbac({ resource: 'core:branch', action: 'update' }),
   branchController.update,
 );
-branchRouter.patch('/:id/status', authenticate, branchController.updateStatus);
+branchRouter.patch('/:id/status', authenticate, requireAdmin, branchController.updateStatus);

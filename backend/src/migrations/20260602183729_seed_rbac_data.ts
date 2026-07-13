@@ -47,7 +47,7 @@ export async function up(knex: Knex): Promise<void> {
         ('core:deliveries', 'assign', NOW()),
  
         -- finance permissions
-        ('core:finance', 'read', NOW()),
+        ('core:finance', 'read', NOW())
 
         ON CONFLICT (resource, action) DO NOTHING;
     `);

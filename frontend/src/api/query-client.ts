@@ -18,7 +18,7 @@ export const client = new QueryClient({
         toast.success(mutation.meta.successMessage as string);
         return;
       }
-      console.log(_data, "dddddddddddddddd");
+
       if (
         _data &&
         typeof _data === "object" &&

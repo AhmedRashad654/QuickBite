@@ -2,6 +2,7 @@ import AppLayout from "@/layouts/AppLayout";
 import AuthLayout from "@/layouts/AuthLayout";
 import DeliveryLayout from "@/layouts/DeliveryLayout";
 import RestaurantLayout from "@/layouts/RestaurantLayout";
+import AdminLayout from "@/layouts/AdminLayout";
 import { lazy } from "react";
 import {
   createBrowserRouter,
@@ -44,6 +45,19 @@ const RestaurantSettingsPage = lazy(
 );
 const RestaurantFinancePage = lazy(
   () => import("@/features/restaurant/pages/RestaurantFinancePage"),
+);
+
+const AdminRestaurantListPage = lazy(
+  () => import("@/features/admin/pages/AdminRestaurantListPage"),
+);
+const AdminRestaurantDetailPage = lazy(
+  () => import("@/features/admin/pages/AdminRestaurantDetailPage"),
+);
+const AdminAgentListPage = lazy(
+  () => import("@/features/admin/pages/AdminAgentListPage"),
+);
+const AdminAgentDetailPage = lazy(
+  () => import("@/features/admin/pages/AdminAgentDetailPage"),
 );
 
 const Routes = () => {
@@ -138,6 +152,28 @@ const Routes = () => {
     },
   ];
 
+  const AdminRoutes = [
+    {
+      path: "/admin",
+      element: <ProtectedRoute allowedRoles={SYSTEM_ROLES.SYSTEM_ADMIN} />,
+      children: [
+        {
+          element: <AdminLayout />,
+          children: [
+            {
+              index: true,
+              element: <Navigate to="restaurants" replace />,
+            },
+            { path: "restaurants", element: <AdminRestaurantListPage /> },
+            { path: "restaurants/:restaurantId", element: <AdminRestaurantDetailPage /> },
+            { path: "agents", element: <AdminAgentListPage /> },
+            { path: "agents/:agentId", element: <AdminAgentDetailPage /> },
+          ],
+        },
+      ],
+    },
+  ];
+
   const errorRoute = {
     path: "*",
     element: <div>not found</div>,
@@ -148,6 +184,7 @@ const Routes = () => {
     ...CustomerRoutes,
     ...DeliveryRoutes,
     ...RestaurantRoutes,
+    ...AdminRoutes,
     errorRoute,
   ]);
 

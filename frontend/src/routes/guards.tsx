@@ -28,6 +28,8 @@ export const ProtectedRoute = ({
   if (user?.system_role === SYSTEM_ROLES.CUSTOMER) return <Navigate to="/" />;
   if (user?.system_role === SYSTEM_ROLES.DELIVERY_AGENT) return <Navigate to="/delivery" />;
   if (user?.system_role === SYSTEM_ROLES.RESTAURANT_USER) return <Navigate to="/restaurant/orders" />;
+  if (user?.system_role === SYSTEM_ROLES.SYSTEM_ADMIN) return <Navigate to="/admin" />;
+  return null;
 
 };
 
@@ -46,6 +48,9 @@ export const GuestRoute = () => {
     }
     if (user?.system_role === SYSTEM_ROLES.DELIVERY_AGENT) {
       return <Navigate to="/delivery" replace />;
+    }
+    if (user?.system_role === SYSTEM_ROLES.SYSTEM_ADMIN) {
+      return <Navigate to="/admin" replace />;
     }
     return <Navigate to="/" replace />;
   }

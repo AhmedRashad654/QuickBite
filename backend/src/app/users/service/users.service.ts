@@ -1,7 +1,7 @@
 import { Knex } from 'knex';
 import { UpdateUserDTO } from '../dto/users.dto.js';
 import { UserNotFoundError } from '../error.js';
-import { createUser, findUserById, searchDeliveryAgents, updateUser } from '../repository/users.repo.js';
+import { createUser, findUserById, listDeliveryAgentsForAdmin, searchDeliveryAgents, updateUser } from '../repository/users.repo.js';
 import { CreateUserData, User } from '../types.js';
 import { hashPassword } from '../../auth/utils.js';
 import { inject, injectable } from 'tsyringe';
@@ -89,5 +89,9 @@ export class UserService {
 
   searchDeliveryAgents = async (query: string) => {
     return searchDeliveryAgents(query);
+  };
+
+  listDeliveryAgentsForAdmin = async () => {
+    return listDeliveryAgentsForAdmin();
   };
 }

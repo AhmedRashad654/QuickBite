@@ -44,6 +44,13 @@ export class RestaurantController {
     sendPaginated(res, result.data, result.meta);
   };
 
+  getAllAdmin = async (req: Request, res: Response) => {
+    const params = parsePaginationQuery(req.query, ['id', 'created_at', 'owner_id']);
+    const filters = parseFilters(req.query, ['id', 'status', 'name']);
+    const result = await this.restaurantService.findAllForAdmin(params, filters);
+    sendPaginated(res, result.data, result.meta);
+  };
+
   getById = async (req: Request, res: Response) => {
     const result = await this.restaurantService.findById(Number(req.params.id));
     sendSuccess(res, result);

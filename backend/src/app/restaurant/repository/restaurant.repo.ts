@@ -1,5 +1,5 @@
 import { Knex } from 'knex';
-import { Restaurant } from '../type.js';
+import { AdminRestaurantItem, Restaurant } from '../type.js';
 import { db } from '../../../lib/knex/knex.js';
 import { applyCursorPagination, applyFilters, FilterParams, PaginationParams } from '../../../lib/http/pagination/cursor-pagination.js';
 
@@ -67,4 +67,32 @@ export async function updateRestaurantStatus(id: number, status: string): Promis
     })
     .returning(RESTAURANT_COLUMNS);
   return row;
+}
+
+
+
+export async function findAllRestaurantsForAdmin(
+  params: PaginationParams,
+  filters: FilterParams[],
+): Promise<AdminRestaurantItem[]> {
+  let query = db('restaurants as r')
+    .select(
+      ...RESTAURANT_COLUMNS.map((c) => `r.${c}`),
+      db.raw('COALESCE(b.branch_count, 0)::int AS total_branches'),
+      db.raw('COALESCE(b.inactive_count, 0)::int AS inactive_branches'),
+    )
+    .leftJoin(
+      db.raw(
+        `LATERAL (
+          SELECT
+            COUNT(*)::int AS branch_count,
+            COUNT(*) FILTER (WHERE b.is_active = false)::int AS inactive_count
+          FROM restaurant_branches b WHERE b.restaurant_id = r.id
+        ) b`,
+      ),
+      db.raw('true'),
+    );
+  query = applyFilters(query, filters);
+  query = applyCursorPagination(query, params);
+  return query;
 }

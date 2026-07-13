@@ -83,6 +83,5 @@ export class UpdateBranchStatusDTO {
   @IsOptional()
   @IsNumber()
   @Min(0)
-  @Max(100)
   commission?: number;
 }

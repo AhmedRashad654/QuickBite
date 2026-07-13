@@ -32,6 +32,22 @@ export async function up(knex: Knex): Promise<void> {
         CREATE INDEX idx_restaurant_branches_restaurant_id ON restaurant_branches(restaurant_id);
         CREATE INDEX idx_restaurant_branches_is_active ON restaurant_branches(is_active);
         CREATE INDEX idx_restaurant_branches_location ON restaurant_branches USING GIST(location);
+
+        CREATE OR REPLACE FUNCTION fn_insert_branch_product_details()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            INSERT INTO product_branch_details (branch_id, product_id, price, stock, is_available)
+            SELECT NEW.id, id, 0, 0, false
+            FROM products
+            WHERE restaurant_id = NEW.restaurant_id;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+
+        CREATE TRIGGER trg_branch_after_insert
+        AFTER INSERT ON restaurant_branches
+        FOR EACH ROW
+        EXECUTE FUNCTION fn_insert_branch_product_details();
         
     `);
 }

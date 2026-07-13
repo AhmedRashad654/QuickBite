@@ -35,7 +35,7 @@ financeRouter.get(
 financeRouter.post(
   '/admin/restaurants/:restaurantId/payouts',
   authenticate,
-  rbac({ resource: 'finance', action: 'payout_create' }),
+  requireAdmin,
   idempotency({ strict: true }),
   ctrl.createPayout,
 );
@@ -56,3 +56,9 @@ financeRouter.post(
   idempotency({ strict: true }),
   ctrl.createAgentPayout,
 );
+
+// Admin reads agent balance.
+financeRouter.get('/admin/agents/:agentId/balance', authenticate, requireAdmin, ctrl.getAdminAgentBalance);
+
+// Admin reads agent payout history.
+financeRouter.get('/admin/agents/:agentId/payouts', authenticate, requireAdmin, ctrl.listAdminAgentPayouts);

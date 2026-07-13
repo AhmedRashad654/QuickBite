@@ -4,7 +4,7 @@ export function parsePaginationQuery(query: Record<string, any>, allowedSortBy: 
   let sortBy = query.sortBy as string;
 
   if (!sortBy || !allowedSortBy?.includes(sortBy)) {
-    sortBy = 'created_at';
+    sortBy = 'id';
   }
 
   const parsedLimit = Number(query.limit);

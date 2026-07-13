@@ -8,6 +8,7 @@ export const SYSTEM_ROLES = {
   CUSTOMER: "customer",
   DELIVERY_AGENT: "delivery_agent",
   RESTAURANT_USER: "restaurant_user",
+  SYSTEM_ADMIN: "system_admin",
 } as const;
 
 export type SystemRole = (typeof SYSTEM_ROLES)[keyof typeof SYSTEM_ROLES];
