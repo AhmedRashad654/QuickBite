@@ -25,7 +25,7 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ secrets:DOCKERHUB_USERNAME }}/quickbite-backend:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/quickbite-backend:latest
 
       # Build & Push Frontend Image
       - name: Build and Push Frontend
@@ -34,7 +34,7 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: ${{ secrets:DOCKERHUB_USERNAME }}/quickbite-frontend:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/quickbite-frontend:latest
 
   deploy-to-ec2:
     needs: build-and-push
