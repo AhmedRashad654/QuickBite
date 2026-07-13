@@ -35,7 +35,6 @@ const SignUp = () => {
       role: SYSTEM_ROLES.CUSTOMER,
       restaurantName: "",
       restaurantCountry: COUNTRY.EG,
-      restaurantLogoUrl: import.meta.env.VITE_PLACEHOLDER_IMAGE_RESTAURANT,
     },
   });
   const selectedRole = useWatch({ control: form.control, name: "role" });
@@ -55,10 +54,6 @@ const SignUp = () => {
         name: values.restaurantName?.trim() ?? "",
         primary_country: values.restaurantCountry?.trim() ?? "",
       };
-
-      if (values.restaurantLogoUrl?.trim()) {
-        payload.restaurant.logo_url = values.restaurantLogoUrl.trim();
-      }
     }
 
     registerMutation.mutate(payload, {

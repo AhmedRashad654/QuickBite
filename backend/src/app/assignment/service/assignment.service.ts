@@ -50,10 +50,8 @@ export class AssignmentService {
 
   async tickRegion(): Promise<{ processed: number; offered: number; skipped: number }> {
     const activeOfferKeys = await this.cache.keys('assignment:offer:*');
-    console.log(activeOfferKeys, 'active offer keys');
     const excludedOrderIds = activeOfferKeys.map((key) => key.split(':').pop()).filter((id): id is string => !!id);
     const orders = await findReadyUnassigned(env.delivery.batch, excludedOrderIds);
-    console.log(orders, 'orders on  unassigned');
     let offered = 0;
     let skipped = 0;
     for (const o of orders) {
