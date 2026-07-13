@@ -1,7 +1,5 @@
-import { AppError } from "../../lib/error/AppError.js";
+import { AppError } from '../../lib/error/AppError.js';
 
 export const RestaurantNotFoundError = new AppError('Restaurant not found', 404);
-export const OwnerAlreadyExistsError = new AppError(
-  'User with this email or phone already exists',
-  409,
-);
+export const RestaurantCreateError = new AppError('Failed to create restaurant', 404);
+export const OwnerAlreadyExistsError = new AppError('User with this email or phone already exists', 409);

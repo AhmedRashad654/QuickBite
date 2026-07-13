@@ -2,7 +2,6 @@ import { Knex } from 'knex';
 import { db } from '../../../lib/knex/knex.js';
 import { RestaurantMember, ResultRestaurantsWithRole } from '../type.js';
 import { MemberStatus } from '../enums.js';
-import { RestaurantStatus } from '../../restaurant/enums.js';
 
 const MEMBER_COLUMNS = ['id', 'restaurant_id', 'user_id', 'role_id', 'status', 'created_at', 'updated_at'];
 

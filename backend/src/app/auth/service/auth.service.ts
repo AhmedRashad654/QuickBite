@@ -38,6 +38,7 @@ import { TOKENS } from '../../../lib/di/tokens.js';
 import { passwordResetEmail } from '../templates/password-reset.js';
 import { MailjetEmailProvider } from '../../../lib/email/mailjet.js';
 import { JwtPayloadType } from '../../../lib/types/jwtPayload.js';
+import { RestaurantCreateError } from '../../restaurant/errors.js';
 
 @injectable()
 export class AuthService {
@@ -81,7 +82,7 @@ export class AuthService {
         restaurant = await this.restaurantService.create(user.id, data.restaurant, trx);
         if (!restaurant) {
           await trx.rollback();
-          return;
+          throw RestaurantCreateError;
         }
         membershipsInfo.push({
           restaurantId: restaurant.id,
