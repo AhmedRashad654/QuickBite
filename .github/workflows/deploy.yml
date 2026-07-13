@@ -28,6 +28,9 @@ jobs:
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/quickbite-backend:latest
 
       # Build & Push Frontend Image
+      - name: Create .env for Frontend Build
+        run: |
+          echo "VITE_API_URL=/api/v1" > ./frontend/.env
       - name: Build and Push Frontend
         uses: docker/build-push-action@v5
         with:
@@ -52,5 +55,5 @@ jobs:
             docker compose pull backend frontend
 
             docker compose up -d
-            
+
             docker image prune -f
