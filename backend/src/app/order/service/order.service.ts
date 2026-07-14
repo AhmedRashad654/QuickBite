@@ -350,27 +350,4 @@ export class OrderService {
     throw PermissionDeniedError;
   }
 
-  private async getAllRoomsAndUsers() {
-    const rooms = this.io.sockets.adapter.rooms;
-    const result: Record<string, { totalConnections: number; userIds: string[] }> = {};
-
-    for (const [roomName, socketIdsSet] of rooms.entries()) {
-      if (socketIdsSet.has(roomName)) continue;
-
-      const userIds: string[] = [];
-
-      for (const socketId of socketIdsSet) {
-        const socket = this.io.sockets.sockets.get(socketId);
-        if (socket && socket.data.userId) {
-          userIds.push(socket.data.userId);
-        }
-      }
-
-      result[roomName] = {
-        totalConnections: socketIdsSet.size,
-        userIds: userIds,
-      };
-    }
-    return result;
-  }
 }
