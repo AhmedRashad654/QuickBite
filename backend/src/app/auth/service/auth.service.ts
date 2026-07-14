@@ -193,7 +193,6 @@ export class AuthService {
     }
     // generate an otp
     const otp = generateOTP();
-    console.log(`Generated OTP for ${data.email} is ${otp}`);
     // hash the otp
     const hashedOtp = hashOTP(otp);
     // insert the otp
@@ -210,19 +209,16 @@ export class AuthService {
   resetPassword = async (data: ResetPasswordDTO) => {
     // find user
     const user = await findUserByEmail(data.email);
-    console.log(user, 'yy');
     if (!user) {
       throw InvalidOTPError;
     }
     // find reset password
     const reset = await findLatestPasswordResetByUserId(user.id);
-    console.log(reset, 'reset 7');
     if (!reset) {
       throw InvalidOTPError;
     }
     // verify otp and expiry date
     const inputOTPHash = hashOTP(data.otp);
-    console.log(inputOTPHash, 'input hash otp');
     if (inputOTPHash != reset.otp_hash || reset.expires_at < new Date()) {
       throw InvalidOTPError;
     }

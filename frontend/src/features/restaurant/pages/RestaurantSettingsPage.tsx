@@ -18,9 +18,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Loader } from "@/components/shared/Loader";
+import { useActiveRestaurantStore } from "@/store/active-restaurant-store";
+import { RESTAURANT_ROLES } from "../types";
+import { useNavigate } from "react-router-dom";
 
 const RestaurantSettingsPage = () => {
+  const navigate = useNavigate();
   const { data: restaurantData, isLoading } = useRestaurant();
+  const activeRestaurantRole = useActiveRestaurantStore(
+    (s) => s.activeRestaurant?.restaurantRole,
+  );
   const updateRestaurant = useUpdateRestaurant();
   const [isUploadingImage, setIsUploadingImage] = useState(false);
 
@@ -48,6 +55,12 @@ const RestaurantSettingsPage = () => {
     control: control,
     name: "logo_url",
   });
+
+  useEffect(() => {
+    if (activeRestaurantRole !== RESTAURANT_ROLES.OWNER) {
+      navigate("/restaurant/orders");
+    }
+  }, [activeRestaurantRole, navigate]);
 
   const onSubmit = (values: RestaurantFormValues) => {
     updateRestaurant.mutate(values);
@@ -91,6 +104,7 @@ const RestaurantSettingsPage = () => {
                     Primary Country
                   </FieldLabel>
                   <Select
+                    key={field.value}
                     name={field.name}
                     onValueChange={field.onChange}
                     value={field.value}

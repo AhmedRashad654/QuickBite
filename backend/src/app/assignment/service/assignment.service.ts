@@ -76,7 +76,6 @@ export class AssignmentService {
     const attemptsRaw = await this.cache.get(AssignmentService.attemptsKey(order.public_id));
     const attempts = Number(attemptsRaw ?? 0);
     if (attempts >= env.delivery.maxAttempts) {
-      console.log('here order 3 stemppes');
       const updated = await updateOrderStatus(order.public_id, OrderStatus.EXHAUSTED, null);
       const statusDto = OrderStatusResponseDTO.from(updated);
       this.io.to(`branch:${order.branch_id}`).emit('order.status.updated', statusDto);
@@ -205,10 +204,8 @@ export class AssignmentService {
    * the order for the specified agent regardless of distance/busy state.
    */
   async ownerAssign(publicId: string, agentId: number): Promise<DeliveryTaskResponseDTO> {
-    console.log('enter here awner assign');
     const ok = await this.cache.trySet(AssignmentService.claimKey(publicId), String(agentId), env.delivery.claimTtlSec);
     if (!ok) throw OrderAlreadyClaimedError;
-    console.log('after first');
     const trx = await db.transaction();
     let updated: Order;
     try {

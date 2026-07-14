@@ -29,6 +29,7 @@ export const useSyncUserSession = () => {
           (m) =>
             m.restaurantId === activeRestaurant?.restaurantId &&
             m.restaurantRole === activeRestaurant?.restaurantRole &&
+            m.restaurantName === activeRestaurant?.restaurantName &&
             m.restaurantStatus === activeRestaurant?.restaurantStatus &&
             m.stautsMember === activeRestaurant?.stautsMember,
         );
@@ -47,7 +48,7 @@ export const useSyncUserSession = () => {
         if (activeRestaurant) setActiveRestaurant(null);
       }
     },
-    [activeRestaurant, setActiveRestaurant],
+    [activeRestaurant, setActiveRestaurant, setOnline],
   );
 
   return syncSession;

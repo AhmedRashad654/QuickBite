@@ -13,8 +13,8 @@ export class RedisCacheProvider implements ICacheProvider {
       lazyConnect: true,
       maxRetriesPerRequest: null,
       retryStrategy(times) {
-        const delay = Math.min(times * 50, 20);
-        return delay;
+        if (times > 10) return null;
+        return Math.min(times * 100, 3000);
       },
     });
 

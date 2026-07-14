@@ -174,9 +174,7 @@ export class OrderService {
   async listCustomerOrders(actor: Partial<JwtPayloadType>, year: number, pagination: PaginationParams) {
     const yearStart = new Date(Date.UTC(year, 0, 1));
     const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
-    console.log(pagination);
     const result = await findOrdersByCustomer({ customerId: actor.userId!, yearStart, yearEnd }, pagination);
-    console.log(result, 'result 654');
     const counts = await countItemsByOrderIds(result.data.map((o) => o.id));
     return {
       data: result.data.map((o) => OrderSummaryResponseDTO.from(o, counts.get(o.id) ?? 0)),
@@ -245,8 +243,6 @@ export class OrderService {
 
     const updated = await updateOrderStatus(order.public_id, status, stampColumnMap[status] ?? null);
     const statusDto = OrderStatusResponseDTO.from(updated);
-    const res = this.getAllRoomsAndUsers();
-    console.log(res, 'res socket rooms');
     const io = this.io;
     io.to(`branch:${order.branch_id}`).emit('order.status.updated', statusDto);
 

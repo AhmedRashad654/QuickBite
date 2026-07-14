@@ -39,9 +39,7 @@ export function attachWsServer(httpServer: HttpServer): IOServer {
     socket.emit('hello', { allowedChannels: [...allowed] });
 
     socket.on('subscribe', (channel: string, ack?: (res: unknown) => void) => {
-      console.log('try subdcription on ', channel);
       if (typeof channel !== 'string' || !allowed.has(channel)) {
-        console.log('filed');
         ack?.({ ok: false, error: 'not permitted' });
         return;
       }

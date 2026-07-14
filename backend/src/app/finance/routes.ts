@@ -18,7 +18,7 @@ financeRouter.get(
   '/restaurants/:restaurantId/balance',
   authenticate,
   requireRestaurantMember('restaurantId'),
-  rbac({ resource: 'finance', action: 'read' }),
+  rbac({ resource: 'core:finance', action: 'read' }),
   ctrl.getBalance,
 );
 
@@ -26,7 +26,7 @@ financeRouter.get(
   '/restaurants/:restaurantId/payouts',
   authenticate,
   requireRestaurantMember('restaurantId'),
-  rbac({ resource: 'finance', action: 'read' }),
+  rbac({ resource: 'core:finance', action: 'read' }),
   ctrl.listPayouts,
 );
 

@@ -49,7 +49,6 @@ const DialogCreateMember = ({
       toast.error("Please select at least one branch.");
       return;
     }
-    console.log("values", values);
     createMember.mutate(
       {
         email: values.email,

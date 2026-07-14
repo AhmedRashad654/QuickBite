@@ -16,7 +16,6 @@ export class AssignmentController {
   /** POST /orders/:publicId/assign  body: { agentId } */
   ownerAssign = async (req: Request, res: Response) => {
     const agentId = Number((req.body ?? {}).agentId);
-    console.log('in service');
     if (!Number.isFinite(agentId) || agentId <= 0) throw AgentIdIsRequiredError;
     const dto = await this.assignment.ownerAssign(String(req.params.publicId), agentId);
     sendSuccess(res, dto, 'Order assigned to delivery agent');

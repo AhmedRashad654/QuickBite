@@ -49,7 +49,7 @@ const Checkout = () => {
     defaultValues: {
       order_type: "delivery",
       customer_address_id: null,
-      payment_method: "cod",
+      payment_method: "online",
     },
   });
 
@@ -238,12 +238,12 @@ const Checkout = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="online">Pay online</SelectItem>
                       <SelectItem value="cod">
                         {orderType === "pickup"
                           ? "Pay at restaurant"
                           : "Cash on delivery"}
                       </SelectItem>
-                      <SelectItem value="online">Pay online</SelectItem>
                     </SelectContent>
                   </Select>
                   {fieldState.invalid ? (

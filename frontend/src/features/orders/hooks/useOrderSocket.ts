@@ -81,7 +81,6 @@ export function useRestaurantOrderEvents(
     };
 
     const handleStatusUpdated = (payload: StatusPayload) => {
-      console.log(payload, "payload");
       queryClient.setQueriesData<InfiniteData<OrdersPage>>(
         { queryKey: ["branch", branchId, "orders"] },
         (oldData) => patchStatus(oldData, payload.publicId, payload.status),

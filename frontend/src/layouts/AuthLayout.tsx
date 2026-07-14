@@ -1,4 +1,4 @@
-import heroImage from "@/assets/hero.png";
+import heroImage from "@/assets/hero.jpg";
 import { Outlet } from "react-router-dom";
 
 const AuthLayout = () => {
@@ -17,7 +17,7 @@ const AuthLayout = () => {
             <p className="text-3xl font-semibold leading-tight">
               Food operations, orders, and delivery in one place.
             </p>
-            <p className="mt-3 text-sm leading-6 text-white/80">
+            <p className="mt-3 text-sm leading-6 text-white/90">
               Sign in to continue managing your account.
             </p>
           </div>

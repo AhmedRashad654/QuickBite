@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import {
   AlertTriangleIcon,
   LockIcon,
   LogOut,
+  MenuIcon,
   ShieldAlertIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +19,7 @@ import {
 } from "@/features/restaurant/constants";
 
 const RestaurantLayout = () => {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const logoutMutation = useLogout();
   const activeRestaurant = useActiveRestaurantStore((s) => s.activeRestaurant);
 
@@ -36,7 +39,16 @@ const RestaurantLayout = () => {
   return (
     <div className="flex flex-col h-screen">
       <header className="flex h-14 items-center justify-between border-b bg-card">
-        <div className="flex h-14 items-center border-b px-4">
+        <div className="flex h-14 items-center border-b px-4 gap-2">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <MenuIcon className="size-5" />
+            <span className="sr-only">Open menu</span>
+          </Button>
           <span className="text-lg font-semibold">QuickBite</span>
         </div>
         <Button
@@ -50,7 +62,7 @@ const RestaurantLayout = () => {
         </Button>
       </header>
       <main className="flex flex-1">
-        <RestaurantSidebar />
+        <RestaurantSidebar open={sidebarOpen} onOpenChange={setSidebarOpen} />
         <div className="max-w-7xl w-full mx-auto  p-6">
           {restaurantAlert && (
             <Alert

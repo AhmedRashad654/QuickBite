@@ -19,7 +19,6 @@ export const getAdminRestaurants = async (
     "/restaurant/",
     { params },
   );
-  console.log(res, "t");
   return unwrap(res);
 };
 

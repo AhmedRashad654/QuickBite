@@ -22,7 +22,7 @@ orderRouter.get(
   '/restaurants/:restaurantId',
   authenticate,
   requireRestaurantMember('restaurantId'),
-  rbac({ resource: 'orders', action: 'read' }),
+  rbac({ resource: 'core:orders', action: 'read' }),
   orderController.listRestaurantOrders,
 );
 
@@ -30,7 +30,7 @@ orderRouter.get(
   '/branchs/:branchId',
   authenticate,
   requireBranchAccess('branchId'),
-  rbac({ resource: 'orders', action: 'read' }),
+  rbac({ resource: 'core:orders', action: 'read' }),
   orderController.listBranchOrders,
 );
 

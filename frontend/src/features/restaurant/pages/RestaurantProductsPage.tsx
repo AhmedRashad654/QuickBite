@@ -31,7 +31,7 @@ const RestaurantProductsPage = () => {
   const { data: branchProductsData } = useBranchProducts(
     activeBranch?.branchId ?? null,
   );
-  console.log(activeRestaurant);
+
   const products = Array.isArray(productsData) ? productsData : [];
 
   const branchMenu = Array.isArray(branchProductsData)

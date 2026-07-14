@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { useUploadImage } from "@/hooks/useUploadImage";
 import { Button } from "@/components/ui/button";
 import { ImageIcon, Loader2, X } from "lucide-react";
@@ -26,7 +32,9 @@ export function ImageUpload({
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState(value);
   useEffect(() => {
-    setPreview(value);
+    setTimeout(() => {
+      setPreview(value);
+    }, 50);
   }, [value]);
   const uploadImage = useUploadImage(folder);
 

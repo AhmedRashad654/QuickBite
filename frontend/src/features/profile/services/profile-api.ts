@@ -9,7 +9,6 @@ export const updateProfile = async (payload: UpdateProfilePayload) => {
     "/user/me",
     payload,
   );
-  const r = unwrap(response);
-  console.log(r, "update");
-  return r;
+
+  return unwrap(response);
 };
