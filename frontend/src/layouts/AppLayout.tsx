@@ -18,21 +18,21 @@ const AppLayout = () => {
             <Button variant="ghost" size="sm" asChild>
               <Link to="/checkout">
                 <ShoppingBag />
-                Checkout
+                <span className="hidden md:block">Checkout</span>
               </Link>
             </Button>
 
             <Button variant="ghost" size="sm" asChild>
               <Link to="/orders">
                 <Package />
-                Orders
+                <span className="hidden md:block">Orders</span>
               </Link>
             </Button>
 
             <Button variant="ghost" size="sm" asChild>
               <Link to="/profile">
                 <User />
-                Profile
+                <span className="hidden md:block">Profile</span>
               </Link>
             </Button>
 

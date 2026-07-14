@@ -36,7 +36,7 @@ export function DeliveryTaskCard({ task }: Props) {
           <div className="flex items-start gap-2">
             <MapPin className="mt-0.5 size-3 shrink-0 text-green-600" />
             <div className="min-w-0">
-              <p className="truncate font-medium">
+              <p className=" font-medium">
                 {task.pickup.name || "Branch"}
               </p>
               <p className="text-xs text-muted-foreground">

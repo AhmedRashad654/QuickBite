@@ -57,13 +57,19 @@ export function usePresence() {
       navigator.geolocation.getCurrentPosition(
         (pos) =>
           resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {
-          toast.warning(
-            "You have blocked access to this site. To enable it, click on the lock icon 🔒 next to the URL at the top of the browser, go to Location -> Allow, and then refresh the page.",
-          );
-          reject(new Error("Permission denied"));
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            toast.warning(
+              "Location access is blocked. Please enable it in your browser settings.",
+            );
+          } else if (error.code === error.TIMEOUT) {
+            toast.warning("Location request timed out. Retrying...");
+          } else {
+            console.error("Geolocation error:", error.message);
+          }
+          reject(error);
         },
-        { enableHighAccuracy: true, timeout: 10_000, maximumAge: 0 },
+        { enableHighAccuracy: true, timeout: 15_000, maximumAge: 0 },
       );
     });
   }, []);

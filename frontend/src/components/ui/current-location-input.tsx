@@ -98,7 +98,7 @@ const CurrentLocationInput = ({
       (err) => {
         setError(
           err.code === err.PERMISSION_DENIED
-            ? "Location permission was denied. Please enable location access and try again."
+            ? "Location access is blocked. Please enable it in your browser settings and refresh the page."
             : "Failed to retrieve your location. Please try again.",
         );
         setIsLoading(false);

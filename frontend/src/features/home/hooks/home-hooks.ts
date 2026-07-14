@@ -22,7 +22,7 @@ export const useCurrentLocation = () => {
   const requestCurrentLocation = useCallback(() => {
     if (permissionStatus === "denied") {
       toast.warning(
-        "You have blocked access to this site. To enable it, click on the lock icon 🔒 next to the URL at the top of the browser, go to Location -> Allow, and then refresh the page.",
+        "Location access is blocked. Please enable it in your browser settings and refresh the page.",
       );
       return;
     }
@@ -46,7 +46,7 @@ export const useCurrentLocation = () => {
       },
       () => {
         toast.warning(
-          "You have blocked access to this site. To enable it, click on the lock icon 🔒 next to the URL at the top of the browser, go to Location -> Allow, and then refresh the page.",
+          "Location access is blocked. Please enable it in your browser settings and refresh the page.",
         );
         setPermissionStatus("denied");
       },

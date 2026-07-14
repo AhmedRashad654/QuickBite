@@ -12,4 +12,4 @@ export const TASK_STATUS_LABELS: Record<string, string> = {
   delivered: "Delivered",
 };
 
-export const PING_INTERVAL_MS = 15_000;
+export const PING_INTERVAL_MS = 45_000;
