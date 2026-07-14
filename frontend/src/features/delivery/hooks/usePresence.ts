@@ -11,6 +11,8 @@ export function usePresence() {
   const watchIdRef = useRef<number | null>(null);
   const pingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastPosRef = useRef<{ lat: number; lng: number } | null>(null);
+  const failureCount = useRef(0);
+  const MAX_FAILURES = 3;
   const [tryOnlineAndOfflineLoading, setTryOnlineAndOfflineLoading] =
     useState(false);
 
@@ -74,10 +76,25 @@ export function usePresence() {
     });
   }, []);
 
+  const becomeOffline = useCallback(async () => {
+    try {
+      setTryOnlineAndOfflineLoading(true);
+      await triggerGoOffline();
+    } catch {
+      // proceed with local cleanup anyway
+    } finally {
+      setTryOnlineAndOfflineLoading(false);
+    }
+    setOnline(false);
+    clearPing();
+    clearWatch();
+  }, [clearPing, clearWatch, setOnline, triggerGoOffline]);
+
   const startPing = useCallback(
     (lat: number, lng: number) => {
       clearPing();
       lastPosRef.current = { lat, lng };
+      failureCount.current = 0;
       pingRef.current = setInterval(async () => {
         try {
           const pos = await getCurrentPosition().catch(
@@ -88,11 +105,17 @@ export function usePresence() {
             await triggerSendPing({ lat: pos.lat, lng: pos.lng });
           }
         } catch {
-          // ping failure is non-critical
+          failureCount.current += 1;
+          console.warn(`Ping failed (${failureCount.current}/${MAX_FAILURES})`);
+
+          if (failureCount.current >= MAX_FAILURES) {
+            becomeOffline();
+            toast.error("Location service issue. You are now offline.");
+          }
         }
       }, PING_INTERVAL_MS);
     },
-    [clearPing, getCurrentPosition, triggerSendPing],
+    [becomeOffline, clearPing, getCurrentPosition, triggerSendPing],
   );
 
   const becomeOnline = useCallback(async () => {
@@ -108,20 +131,6 @@ export function usePresence() {
       setTryOnlineAndOfflineLoading(false);
     }
   }, [getCurrentPosition, triggerGoOnline, setOnline, startPing]);
-
-  const becomeOffline = useCallback(async () => {
-    try {
-      setTryOnlineAndOfflineLoading(true);
-      await triggerGoOffline();
-    } catch {
-      // proceed with local cleanup anyway
-    } finally {
-      setTryOnlineAndOfflineLoading(false);
-    }
-    setOnline(false);
-    clearPing();
-    clearWatch();
-  }, [clearPing, clearWatch, setOnline, triggerGoOffline]);
 
   // Cleanup on unmount
   useEffect(() => {
