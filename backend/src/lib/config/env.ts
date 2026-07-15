@@ -51,7 +51,8 @@ const schema = z.object({
   PAYMENT_SESSION_TIMEOUT_MIN: z.string(),
 
   // Deliveries / agents
-  ASSIGNMENT_TICK_SEC: z.string().default('10'),
+  ASSIGNMENT_TICK_SEC: z.string().default('0'),
+  ASSIGNMENT_TICK_Min:z.string().default("1"),
   ASSIGNMENT_BATCH: z.string().default('20'),
   ASSIGNMENT_MAX_ATTEMPTS: z.string().default('3'),
   ASSIGNMENT_RADIUS_METERS: z.string().default('5000'),
@@ -122,6 +123,7 @@ export const env = {
 
   delivery: {
     assignmentTickSec: Number(parsed.ASSIGNMENT_TICK_SEC),
+    assignmentTickMin: Number(parsed.ASSIGNMENT_TICK_Min),
     batch: Number(parsed.ASSIGNMENT_BATCH),
     maxAttempts: Number(parsed.ASSIGNMENT_MAX_ATTEMPTS),
     radiusMeters: Number(parsed.ASSIGNMENT_RADIUS_METERS),
